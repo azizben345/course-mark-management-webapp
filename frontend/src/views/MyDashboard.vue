@@ -7,7 +7,7 @@
 
     <nav>
       <ul>
-        <li v-for="item in menu" :key="item.name">
+        <li v-for="item in menus" :key="item.name">
           <router-link :to="item.route">{{ item.name }}</router-link>
         </li>
       </ul>
@@ -24,29 +24,34 @@ export default {
   name: 'MyDashboard',
   data() {
     return {
+      // Fetch the role from localStorage
       role: localStorage.getItem('role') || 'guest',
-      menuItems: {
+      menus: {
         lecturer: [
-          { name: 'Manage Students', route: '/lecturer/manage-students' },
-          { name: 'Assessment Entry', route: '/lecturer/assessments' },
-          { name: 'Final Exam Entry', route: '/lecturer/final-exam' },
-          { name: 'Analytics', route: '/lecturer/analytics' }
+          { name: 'Manage Student', route: '/manage-student' },
+          { name: 'Continuous Assessment', route: '/continuous-assessment' }
         ],
         student: [
-          { name: 'Progress', route: '/student/progress' },
-          { name: 'Compare Marks', route: '/student/comparison' },
-          { name: 'Ranking', route: '/student/ranking' }
+          { name: 'Assessment', route: '/assessment' },
+          { name: 'Compare Mark with Coursemates', route: '/compare-marks' },
+          { name: 'Personal Class Rank', route: '/class-rank' },
+          { name: 'Student Performance Expectation', route: '/performance' }
         ],
         advisor: [
-          { name: 'Advisee List', route: '/advisor/advisees' },
-          { name: 'At Risk Students', route: '/advisor/risk' }
+          { name: 'Student-Advisor List', route: '/student-advisor-list' },
+          { name: 'Meeting Records', route: '/meeting-records' }
+        ],
+        admin: [
+          { name: 'Manage Users', route: '/manage-users' },
+          { name: 'Assign Lecturers to Courses', route: '/assign-lecturers' }
         ]
       }
     };
   },
   computed: {
-    menu() {
-      return this.menuItems[this.role] || [];
+    // Use the role from localStorage to display the correct menu
+    menusForRole() {
+      return this.menus[this.role] || [];  // Get the menu items for the current role
     },
     roleLabel() {
       return {
@@ -54,18 +59,19 @@ export default {
         student: 'Student',
         advisor: 'Academic Advisor',
         admin: 'Admin'
-      }[this.role] || 'User';
+      }[this.role] || 'User';  // Default to 'User' if role is not recognized
     }
   },
   methods: {
     logout() {
       localStorage.removeItem('jwt');
-      localStorage.removeItem('role');
-      this.$router.push('/');
+      localStorage.removeItem('role');  // Remove the role when logging out
+      this.$router.push('/');  // Redirect to the login page
     }
   }
 };
 </script>
+
 
 <style scoped>
 header {

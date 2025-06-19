@@ -41,7 +41,7 @@ const routes = [
   { path: '/', component: MyLogin },
 
   // Dashboards
-  { path: '/lecturer/dashboard', component: MyDashboard },
+  { path: '/dashboard', component: MyDashboard },
   // { path: '/lecturer', component: DashboardLecturer },
   // { path: '/lecturer', component: DashboardLecturer },
   // { path: '/student', component: DashboardStudent },

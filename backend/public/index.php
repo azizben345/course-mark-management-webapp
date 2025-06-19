@@ -67,119 +67,139 @@ $app->post('/login', function (Request $request, Response $response) use ($secre
     return $response->withStatus(401)->withHeader('Content-Type', 'application/json');
 });
 
-// Lecturer CRUD routes
-$app->group('/lecturers', function () use ($app) {
-    // Get all lecturers
-    $app->get('', \App\Controllers\LecturerController::class . ':getAll');
-
-    // Get a specific lecturer by ID
-    $app->get('/{id}', \App\Controllers\LecturerController::class . ':getById');
-
-    // Create a new lecturer
-    $app->post('', \App\Controllers\LecturerController::class . ':create');
-
-    // Update an existing lecturer
-    $app->put('/{id}', \App\Controllers\LecturerController::class . ':update');
-
-    // Delete a lecturer
-    $app->delete('/{id}', \App\Controllers\LecturerController::class . ':delete');
-
-    // Assessment Components CRUD routes
-    $app->group('/assessment-components', function () use ($app) {
-        // Get all assessment components for a course
-        $app->get('', \App\Controllers\AssessmentComponentController::class . ':getAll');
-
-        // Get a specific assessment component by ID
-        $app->get('/{id}', \App\Controllers\AssessmentComponentController::class . ':getById');
-
-        // Create a new assessment component
-        $app->post('', \App\Controllers\AssessmentComponentController::class . ':create');
-
-        // Update an existing assessment component
-        $app->put('/{id}', \App\Controllers\AssessmentComponentController::class . ':update');
-
-        // Delete an assessment component
-        $app->delete('/{id}', \App\Controllers\AssessmentComponentController::class . ':delete');
-    });
-
-    // Assessment Marks CRUD routes
-    $app->group('/assessment-marks', function () use ($app) {
-        // Get all marks for a student
-        $app->get('', \App\Controllers\AssessmentMarkController::class . ':getAll');
-
-        // Get specific mark for a student in an assessment component
-        $app->get('/{id}', \App\Controllers\AssessmentMarkController::class . ':getById');
-
-        // Create a mark for a student
-        $app->post('', \App\Controllers\AssessmentMarkController::class . ':create');
-
-        // Update an existing mark for a student
-        $app->put('/{id}', \App\Controllers\AssessmentMarkController::class . ':update');
-
-        // Delete a mark for a student
-        $app->delete('/{id}', \App\Controllers\AssessmentMarkController::class . ':delete');
-    });
-
+$app->get('/me/role', function (Request $request, Response $response) {
+    $jwt = $request->getAttribute('jwt');
+    if (!$jwt) {
+        $response->getBody()->write(json_encode(['error' => 'Unauthorized']));
+        return $response->withStatus(401)->withHeader('Content-Type', 'application/json');
+    }
+    $role = $jwt->role ?? null;
+    $response->getBody()->write(json_encode(['role' => $role]));
+    return $response->withHeader('Content-Type', 'application/json');
 })->add($jwtMiddleware);
 
-// // GET ALL /product – accessible to all registered users
-// $app->get('/product', function ($request, $response) {
-//     $pdo = getPDO();
-//     $stmt = $pdo->query("SELECT * FROM PRODUCT");
-//     $products = $stmt->fetchAll();
+// // Lecturer CRUD routes
+// $app->group('/lecturers', function () use ($app) {
+//     // Get all lecturers
+//     $app->get('/getAll', \App\Controllers\LecturerController::class . ':getAll');
 
-//     $response->getBody()->write(json_encode($products));
-//     return $response->withHeader('Content-Type', 'application/json');
+//     // Get a specific lecturer by ID
+//     $app->get('/get/{id}', \App\Controllers\LecturerController::class . ':getById');
+
+//     // Create a new lecturer
+//     $app->post('/create', \App\Controllers\LecturerController::class . ':create');
+
+//     // Update an existing lecturer
+//     $app->put('/update/{id}', \App\Controllers\LecturerController::class . ':update');
+
+//     // Delete a lecturer
+//     $app->delete('/delete/{id}', \App\Controllers\LecturerController::class . ':delete');
+
+//     // Assessment Components CRUD routes
+//     $app->group('/assessment-components', function () use ($app) {
+//         // Get all assessment components for a course
+//         $app->get('/getAll', \App\Controllers\AssessmentComponentController::class . ':getAll');
+
+//         // Get a specific assessment component by ID
+//         $app->get('/get/{id}', \App\Controllers\AssessmentComponentController::class . ':getById');
+
+//         // Create a new assessment component
+//         $app->post('/create', \App\Controllers\AssessmentComponentController::class . ':create');
+
+//         // Update an existing assessment component
+//         $app->put('/update/{id}', \App\Controllers\AssessmentComponentController::class . ':update');
+
+//         // Delete an assessment component
+//         $app->delete('/delete/{id}', \App\Controllers\AssessmentComponentController::class . ':delete');
+//     });
+
+//     // Assessment Marks CRUD routes
+//     $app->group('/assessment-marks', function () use ($app) {
+//         // Get all marks for a student
+//         $app->get('/getAll', \App\Controllers\AssessmentMarkController::class . ':getAll');
+
+//         // Get specific mark for a student in an assessment component
+//         $app->get('/get/{id}', \App\Controllers\AssessmentMarkController::class . ':getById');
+
+//         // Create a mark for a student
+//         $app->post('/create', \App\Controllers\AssessmentMarkController::class . ':create');
+
+//         // Update an existing mark for a student
+//         $app->put('/update/{id}', \App\Controllers\AssessmentMarkController::class . ':update');
+
+//         // Delete a mark for a student
+//         $app->delete('/delete/{id}', \App\Controllers\AssessmentMarkController::class . ':delete');
+//     });
+
 // })->add($jwtMiddleware);
 
-// //GET 1 PRODUCT - accessible to all regs - normal user and admin
-// $app->get('/product/{id}', function ($request, $response, $args) {
-//     $id = $args['id'];
+// GET ALL /product – accessible to all registered users
+$app->get('/product', function ($request, $response) {
+    $pdo = getPDO();
+    $stmt = $pdo->query("SELECT * FROM PRODUCT");
+    $products = $stmt->fetchAll();
 
-//     if (!is_numeric($id)) {
-//         $response->getBody()->write(json_encode(['error' => 'Invalid product ID']));
-//         return $response->withStatus(400)->withHeader('Content-Type', 'application/json');
-//     }
+    $response->getBody()->write(json_encode($products));
+    return $response->withHeader('Content-Type', 'application/json');
+})->add($jwtMiddleware);
 
-//     $pdo = getPDO();
-//     $stmt = $pdo->prepare("SELECT * FROM PRODUCT WHERE id = ?");
-//     $stmt->execute([$id]);
-//     $product = $stmt->fetch();
+// Lecturers Modules CRUD routes:
+// GET ALL /students
+$app->get('/students', function ($request, $response) {
+    $pdo = getPDO();
+    $stmt = $pdo->query("SELECT * FROM STUDENTS");
+    $products = $stmt->fetchAll();
 
-//     if (!$product) {
-//         $response->getBody()->write(json_encode(['error' => 'Product not found']));
-//         return $response->withStatus(404)->withHeader('Content-Type', 'application/json');
-//     }
+    $response->getBody()->write(json_encode($products));
+    return $response->withHeader('Content-Type', 'application/json');
+})->add($jwtMiddleware);
 
-//     $response->getBody()->write(json_encode($product));
-//     return $response->withHeader('Content-Type', 'application/json');
-// })->add($jwtMiddleware);
+//GET 1 PRODUCT - accessible to all regs - normal user and admin
+$app->get('/product/{id}', function ($request, $response, $args) {
+    $id = $args['id'];
 
+    if (!is_numeric($id)) {
+        $response->getBody()->write(json_encode(['error' => 'Invalid product ID']));
+        return $response->withStatus(400)->withHeader('Content-Type', 'application/json');
+    }
 
-// // POST /product – for admin only
-// $app->post('/product', function ($request, $response) use ($secretKey) {
-//     $jwt = $request->getAttribute('jwt');
+    $pdo = getPDO();
+    $stmt = $pdo->prepare("SELECT * FROM PRODUCT WHERE id = ?");
+    $stmt->execute([$id]);
+    $product = $stmt->fetch();
 
-//     if (($jwt->role ?? '') !== 'admin') {
-//         $error = ['error' => 'Access denied: admin only'];
-//         $response->getBody()->write(json_encode($error));
-//         return $response->withStatus(403)->withHeader('Content-Type', 'application/json');
-//     }
+    if (!$product) {
+        $response->getBody()->write(json_encode(['error' => 'Product not found']));
+        return $response->withStatus(404)->withHeader('Content-Type', 'application/json');
+    }
 
-//     $data = json_decode($request->getBody()->getContents(), true);
+    $response->getBody()->write(json_encode($product));
+    return $response->withHeader('Content-Type', 'application/json');
+})->add($jwtMiddleware);
 
-//     $pdo = getPDO();
-//     $stmt = $pdo->prepare("INSERT INTO PRODUCT (name, price, image) VALUES (?, ?, ?)");
-//     $stmt->execute([
-//         $data['name'] ?? null,
-//         $data['price'] ?? null,
-//         $data['image'] ?? null
-//     ]);
+// POST /product – for admin only
+$app->post('/product', function ($request, $response) use ($secretKey) {
+    $jwt = $request->getAttribute('jwt');
 
-//     $response->getBody()->write(json_encode(['message' => 'Product added']));
-//     return $response->withHeader('Content-Type', 'application/json');
-// })->add(new JwtMiddleware($secretKey));
+    if (($jwt->role ?? '') !== 'admin') {
+        $error = ['error' => 'Access denied: admin only'];
+        $response->getBody()->write(json_encode($error));
+        return $response->withStatus(403)->withHeader('Content-Type', 'application/json');
+    }
 
+    $data = json_decode($request->getBody()->getContents(), true);
+
+    $pdo = getPDO();
+    $stmt = $pdo->prepare("INSERT INTO PRODUCT (name, price, image) VALUES (?, ?, ?)");
+    $stmt->execute([
+        $data['name'] ?? null,
+        $data['price'] ?? null,
+        $data['image'] ?? null
+    ]);
+
+    $response->getBody()->write(json_encode(['message' => 'Product added']));
+    return $response->withHeader('Content-Type', 'application/json');
+})->add(new JwtMiddleware($secretKey));
 
 // CORS preflight support
 $app->options('/{routes:.+}', function ($request, $response, $args) {

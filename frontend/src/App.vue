@@ -33,10 +33,24 @@ export default {
         fitness: { name: "Coach Rizal", email: "rizal@bmiapp.com" }
       },
       menus: {
-        admin: ["Dashboard", "Manage Users", "Statistics"],
-        personbmi: ["My BMI", "My Progress", "Programs"],
-        nutritionist: ["Clients", "Diet Plans", "Reports"],
-        fitness: ["Trainees", "Workout Plans", "Progress Tracker"]
+        lecturer: [
+          { name: 'Manage Student', route: '/manage-student' },
+          { name: 'Continuous Assessment', route: '/continuous-assessment' }
+        ],
+        student: [
+          { name: 'Assessment', route: '/assessment' },
+          { name: 'Compare Mark with Coursemates', route: '/compare-marks' },
+          { name: 'Personal Class Rank', route: '/class-rank' },
+          { name: 'Student Performance Expectation', route: '/performance' }
+        ],
+        advisor: [
+          { name: 'Student-Advisor List', route: '/student-advisor-list' },
+          { name: 'Meeting Records', route: '/meeting-records' }
+        ],
+        admin: [
+          { name: 'Manage Users', route: '/manage-users' },
+          { name: 'Assign Lecturers to Courses', route: '/assign-lecturers' }
+        ]
       }
     }
   },

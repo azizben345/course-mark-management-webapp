@@ -34,37 +34,49 @@ export default {
   },
   methods: {
     async login() {
-      try {
-        const res = await fetch('http://localhost:8000/login', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            username: this.username,
-            password: this.password
-          })
-        });
+        try {
+            // Send POST request to /login for authentication
+            const res = await fetch('http://localhost:8000/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    username: this.username,
+                    password: this.password
+                })
+            });
 
-        const data = await res.json();
+            const data = await res.json();
 
-        if (res.ok && data.token) {
-          localStorage.setItem('jwt', data.token);
-          this.successMessage = 'Login successful!';
-          console.log('JWT:', data.token);
-          console.log('Router:', this.$router);
+            if (res.ok && data.token) {
+                // Store JWT token in localStorage
+                localStorage.setItem('jwt', data.token);
 
-          // Delay navigation to show confirmation
-          setTimeout(() => {
-            this.$router.push('/lecturer/dashboard');
-          }, 1000);
+                // Fetch the user's role
+                const roleRes = await fetch('http://localhost:8000/me/role', {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${data.token}`
+                    }
+                });
 
-        } else {
-          this.errorMessage = data.error || 'Login failed';
+                const roleData = await roleRes.json();
+
+                if (roleRes.ok && roleData.role) {
+                    // Store the role in localStorage
+                    localStorage.setItem('role', roleData.role);
+                } else {
+                    console.error('Failed to fetch user role');
+                }
+
+                // Redirect to dashboard
+                this.$router.push('/dashboard');
+            } else {
+                alert(data.error || 'Login failed');
+            }
+        } catch (err) {
+            console.error('Login error:', err);
+            alert('Login error. Please try again.');
         }
-
-      } catch (err) {
-        console.error('Login error:', err);
-        this.errorMessage = 'Login error. Please try again.';
-      }
     }
   }
 };
