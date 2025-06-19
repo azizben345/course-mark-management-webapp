@@ -32,4 +32,10 @@ class JwtMiddleware {
             return $response->withStatus(401)->withHeader('Content-Type', 'application/json');
         }
     }
+
+    private function unauthorizedResponse($request) {
+        $response = new \Slim\Psr7\Response();
+        $response->getBody()->write(json_encode(['error' => 'Unauthorized']));
+        return $response->withStatus(401)->withHeader('Content-Type', 'application/json');
+    }
 }
