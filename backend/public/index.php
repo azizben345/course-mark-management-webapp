@@ -8,7 +8,7 @@ require __DIR__ . '/../src/db.php';
 require __DIR__ . '/../src/jwtMiddleware.php';
 
 
-use Slim\Factory\AppFactory;
+use Slim\Factory\AppFactory; 
 use Psr\Http\Message\ServerRequestInterface as Request;
 use Psr\Http\Message\ResponseInterface as Response;
 use Firebase\JWT\JWT;
