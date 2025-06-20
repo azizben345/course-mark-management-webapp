@@ -51,6 +51,7 @@ export default {
             if (res.ok && data.token) {
                 // Store JWT token in localStorage
                 localStorage.setItem('jwt', data.token);
+                localStorage.setItem('username', this.username);
 
                 // Fetch the user's role
                 const roleRes = await fetch('http://localhost:8000/me/role', {
