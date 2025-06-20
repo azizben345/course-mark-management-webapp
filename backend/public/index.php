@@ -78,6 +78,36 @@ $app->get('/me/role', function (Request $request, Response $response) {
     return $response->withHeader('Content-Type', 'application/json');
 })->add($jwtMiddleware);
 
+$app->get('/manage-students/{lecturer_id}', function (Request $request, Response $response, $args) {
+    $lecturer_id = $args['lecturer_id'];  // Get the lecturer_id from the URL
+
+    $pdo = getPDO();
+    $stmt = $pdo->prepare("
+        SELECT
+            s.matric_no,
+            s.student_name,
+            ac.component_name,
+            am.mark_obtained,
+            e.final_exam_mark,
+            e.final_total
+        FROM
+            enrollments e
+        JOIN
+            students s ON e.student_matrics_no = s.student_id
+        JOIN
+            assessment_marks am ON e.enrollment_id = am.enrollment_id
+        JOIN
+            assessment_components ac ON am.component_id = ac.component_id
+        WHERE
+            e.lecturer_id = :lecturer_id"
+    );
+    $stmt->execute(['lecturer_id' => $lecturer_id]);
+    $studentsData = $stmt->fetchAll();
+
+    $response->getBody()->write(json_encode($studentsData));
+    return $response->withHeader('Content-Type', 'application/json');
+});
+
 // // Lecturer CRUD routes
 // $app->group('/lecturers', function () use ($app) {
 //     // Get all lecturers
