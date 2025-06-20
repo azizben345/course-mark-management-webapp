@@ -1,24 +1,25 @@
 <template>
-  <div class="login-container">
-    <h2>Login</h2>
-    <form @submit.prevent="loginUser">
-      <div>
-        <label for="username">Username:</label>
-        <input v-model="username" type="text" id="username" required />
-      </div>
+  <div>
+    <div class="login-container">
+      <h2>Login</h2>
+      <form @submit.prevent="loginUser">
+        <div>
+          <label for="username">Username:</label>
+          <input v-model="username" type="text" id="username" required />
+        </div>
 
-      <div>
-        <label for="password">Password:</label>
-        <input v-model="password" type="password" id="password" required />
-      </div>
+        <div>
+          <label for="password">Password:</label>
+          <input v-model="password" type="password" id="password" required />
+        </div>
 
-      <button @click="login">Login</button>
+        <button @click="login">Login</button>
 
-    </form>
+      </form>
+    </div>
+    <p v-if="successMessage" class="success">{{ successMessage }}</p>
+    <p v-else-if="errorMessage" class="error">{{ errorMessage }}</p>
   </div>
-  <p v-if="errorMessage" class="error">{{ errorMessage }}</p>
-    <p v-if="successMessage" style="color: green;">{{ successMessage }}</p>
-    <p v-if="errorMessage" style="color: red;">{{ errorMessage }}</p>
 </template>
 
 <script>

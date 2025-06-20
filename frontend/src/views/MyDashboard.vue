@@ -7,15 +7,11 @@
 
     <nav>
       <ul>
-        <li v-for="item in menus" :key="item.name">
+        <li v-for="item in menusForRole" :key="item.name">
           <router-link :to="item.route">{{ item.name }}</router-link>
         </li>
       </ul>
     </nav>
-
-    <main>
-      <router-view /> <!-- Loads sub-pages based on route -->
-    </main>
   </div>
 </template>
 
@@ -28,22 +24,22 @@ export default {
       role: localStorage.getItem('role') || 'guest',
       menus: {
         lecturer: [
-          { name: 'Manage Student', route: '/manage-student' },
-          { name: 'Continuous Assessment', route: '/continuous-assessment' }
+          { name: 'Manage Student', route: '/lecturer/manage-students' },
+          { name: 'Continuous Assessment', route: '/lecturer/assessments' }
         ],
         student: [
-          { name: 'Assessment', route: '/assessment' },
-          { name: 'Compare Mark with Coursemates', route: '/compare-marks' },
-          { name: 'Personal Class Rank', route: '/class-rank' },
-          { name: 'Student Performance Expectation', route: '/performance' }
+          { name: 'Assessment', route: '/student/assessment' },
+          //{ name: 'Compare Mark with Coursemates', route: '/student/compare-marks' },
+          { name: 'Student Ranking', route: '/student/studentranking' },
+          { name: 'Student Performance Expectation', route: '/student/performance-expectation' }
         ],
         advisor: [
-          { name: 'Student-Advisor List', route: '/student-advisor-list' },
-          { name: 'Meeting Records', route: '/meeting-records' }
+          { name: 'Student-Advisor List', route: '/advisor/student-advisor-list' },
+          { name: 'Meeting Records', route: '/advisor/meeting-records' }
         ],
         admin: [
-          { name: 'Manage Users', route: '/manage-users' },
-          { name: 'Assign Lecturers to Courses', route: '/assign-lecturers' }
+          { name: 'Manage Users', route: '/admin/manage-users' },
+          // { name: 'Assign Lecturers to Courses', route: '/admin/manage-courses' }
         ]
       }
     };
