@@ -171,7 +171,6 @@ $app->get('/manage-students/{lecturer_id}', function (Request $request, Response
     return $response->withHeader('Content-Type', 'application/json');
 });
 
-
 // create enrollment route
 $app->post('/enrollments', function (Request $request, Response $response) {
     $pdo = getPDO();
@@ -228,62 +227,232 @@ $app->post('/enrollments', function (Request $request, Response $response) {
 });
 
 // update enrollment route
-$app->put('/enrollments/{enrollment_id}', function (Request $request, Response $response, $args) {
-    $pdo = getPDO();
-    $enrollment_id = $args['enrollment_id'];  // Get the enrollment ID from the URL
+$app->put('/students/{enrollment_id}', function (Request $request, Response $response, $args) {
+    $enrollment_id = $args['enrollment_id'];
     $data = json_decode($request->getBody()->getContents(), true);
+    $final_exam_mark = $data['final_exam_mark'] ?? 0;
 
-    // Fetch new marks and final exam mark
-    $assessment_marks = $data['assessment_marks']; // Array of component_id and marks
-    $final_exam_mark = $data['final_exam_mark'];
-
-    // Calculate total assessment marks
-    $total_assessment_marks = 0;
-    foreach ($assessment_marks as $mark) {
-        $total_assessment_marks += $mark['mark_obtained'];
-    }
-
-    // Calculate final total
-    $final_total = ($total_assessment_marks * 0.7) + ($final_exam_mark * 0.3);
-
-    // Update enrollment data
-    $stmt = $pdo->prepare("
-        UPDATE enrollments 
-        SET final_exam_mark = ?, total_ca = ?, final_total = ? 
-        WHERE enrollment_id = ?
+    // Get the student's assessment marks from the database
+    $pdo = getPDO();
+    $stmt_marks = $pdo->prepare("
+        SELECT SUM(am.mark_obtained) as ca_total
+        FROM assessment_marks am
+        JOIN enrollments e ON am.enrollment_id = e.enrollment_id
+        WHERE e.enrollment_id = :enrollment_id
     ");
-    $stmt->execute([$final_exam_mark, $total_assessment_marks, $final_total, $enrollment_id]);
+    $stmt_marks->execute(['enrollment_id' => $enrollment_id]);
+    $marks = $stmt_marks->fetch();
 
-    // Update assessment marks for each component
-    foreach ($assessment_marks as $mark) {
-        $stmt = $pdo->prepare("
-            UPDATE assessment_marks 
-            SET mark_obtained = ? 
-            WHERE enrollment_id = ? AND component_id = ?
-        ");
-        $stmt->execute([$mark['mark_obtained'], $enrollment_id, $mark['component_id']]);
-    }
+    // Calculate the total (70% CA, 30% final exam)
+    $ca_total = $marks['ca_total'] ?? 0;
+    $final_total = ($ca_total * 0.7) + ($final_exam_mark * 0.3);
 
-    // Return success response
-    $response->getBody()->write(json_encode(['message' => 'Enrollment updated successfully.']));
+    // Update the final_exam_mark and final_total in the database
+    $stmt_update = $pdo->prepare("
+        UPDATE enrollments
+        SET final_exam_mark = :final_exam_mark, final_total = :final_total
+        WHERE enrollment_id = :enrollment_id
+    ");
+    $stmt_update->execute([
+        'final_exam_mark' => $final_exam_mark,
+        'final_total' => $final_total,
+        'enrollment_id' => $enrollment_id
+    ]);
+
+    $response->getBody()->write(json_encode(['message' => 'Student record updated successfully']));
     return $response->withHeader('Content-Type', 'application/json');
 });
 
 // delete enrollment route
-$app->delete('/enrollments/{enrollment_id}', function (Request $request, Response $response, $args) {
+$app->delete('/students/{enrollment_id}', function (Request $request, Response $response, $args) {
+    $enrollment_id = $args['enrollment_id'];
+
     $pdo = getPDO();
-    $enrollment_id = $args['enrollment_id'];  // Get the enrollment ID from the URL
 
-    // Delete assessment marks for the enrollment
-    $stmt = $pdo->prepare("DELETE FROM assessment_marks WHERE enrollment_id = ?");
-    $stmt->execute([$enrollment_id]);
+    // Delete the student from the enrollments table
+    $stmt = $pdo->prepare("DELETE FROM enrollments WHERE enrollment_id = :enrollment_id");
+    $stmt->execute(['enrollment_id' => $enrollment_id]);
 
-    // Delete enrollment record
-    $stmt = $pdo->prepare("DELETE FROM enrollments WHERE enrollment_id = ?");
-    $stmt->execute([$enrollment_id]);
+    $response->getBody()->write(json_encode(['message' => 'Student record deleted successfully']));
+    return $response->withHeader('Content-Type', 'application/json');
+});
 
-    // Return success response
-    $response->getBody()->write(json_encode(['message' => 'Enrollment deleted successfully.']));
+// get courses assigned to a lecturer
+// Route to fetch courses assigned to the lecturer
+$app->get('/lecturer/{lecturer_id}/courses', function (Request $request, Response $response, $args) {
+    $lecturer_id = $args['lecturer_id'];
+
+    $pdo = getPDO();
+    $stmt = $pdo->prepare("
+        SELECT c.course_code, c.course_name
+        FROM courses c
+        JOIN enrollments e ON c.course_code = e.course_code
+        WHERE e.lecturer_id = :lecturer_id
+        GROUP BY c.course_code
+    ");
+    $stmt->execute(['lecturer_id' => $lecturer_id]);
+    $courses = $stmt->fetchAll();
+
+    $response->getBody()->write(json_encode($courses));
+    return $response->withHeader('Content-Type', 'application/json');
+});
+
+// route to get or fetch all assessment components based on the lecturer's courses
+$app->get('/lecturer/{lecturer_id}/get-assessment-components', function (Request $request, Response $response, $args) {
+    $pdo = getPDO();
+    $stmt = $pdo->prepare("
+        SELECT ac.component_id, ac.component_name, ac.max_mark, c.course_code, c.course_name,
+            (SELECT COUNT(*) FROM assessment_marks am WHERE am.component_id = ac.component_id) AS student_count
+        FROM assessment_components ac
+        JOIN courses c ON ac.course_code = c.course_code
+    ");
+    $stmt->execute();
+    $components = $stmt->fetchAll();
+
+    // Group by course_code
+    $groupedComponents = [];
+    foreach ($components as $component) {
+        $groupedComponents[$component['course_code']][] = $component;
+    }
+
+    $response->getBody()->write(json_encode($groupedComponents));
+    return $response->withHeader('Content-Type', 'application/json');
+});
+
+// route to get assessment components based on component_id
+$app->get('/lecturer/{lecturer_id}/get-assessment-component/{component_id}', function (Request $request, Response $response, $args) {
+    $lecturer_id = $args['lecturer_id'];
+    $component_id = $args['component_id'];  // Get the specific component_id from the URL
+
+    // Fetch the assessment component details for the specific component_id
+    $pdo = getPDO();
+    $stmt = $pdo->prepare("
+        SELECT ac.component_id, ac.component_name, ac.max_mark, ac.course_code, c.course_name, 
+            (SELECT COUNT(*) FROM assessment_marks am WHERE am.component_id = ac.component_id) AS student_count
+        FROM assessment_components ac
+        JOIN courses c ON ac.course_code = c.course_code
+        WHERE ac.lecturer_id = :lecturer_id AND ac.component_id = :component_id
+    ");
+    $stmt->execute([
+        'lecturer_id' => $lecturer_id,
+        'component_id' => $component_id
+    ]);
+    $component = $stmt->fetch();
+
+    if ($component) {
+        $response->getBody()->write(json_encode(['component' => $component]));
+    } else {
+        $response->getBody()->write(json_encode(['error' => 'Component not found']));
+        return $response->withStatus(404);
+    }
+
+    return $response->withHeader('Content-Type', 'application/json');
+});
+
+// route to create a new assessment component
+$app->post('/lecturer/{lecturer_id}/create-assessment-components', function (Request $request, Response $response, $args) {
+    $lecturer_id = $args['lecturer_id'];
+    $data = json_decode($request->getBody()->getContents(), true);
+
+    $course_code = $data['course_code'];
+    $component_name = $data['component_name'];
+    $max_mark = $data['max_mark'];
+
+    $pdo = getPDO();
+    $stmt = $pdo->prepare("
+        INSERT INTO assessment_components (course_code, lecturer_id, component_name, max_mark)
+        VALUES (:course_code, :lecturer_id, :component_name, :max_mark)
+    ");
+    $stmt->execute([
+        'course_code' => $course_code,
+        'lecturer_id' => $lecturer_id,
+        'component_name' => $component_name,
+        'max_mark' => $max_mark
+    ]);
+
+    $response->getBody()->write(json_encode(['message' => 'Assessment component created successfully']));
+    return $response->withHeader('Content-Type', 'application/json');
+});
+
+// route to update an assessment component
+$app->put('/lecturer/{lecturer_id}/assessment-components/{component_id}/update', function (Request $request, Response $response, $args) {
+    $lecturer_id = $args['lecturer_id'];
+    $component_id = $args['component_id'];
+
+    // Get data from the request body
+    $data = json_decode($request->getBody()->getContents(), true);
+    $component_name = $data['component_name'];
+    $max_mark = $data['max_mark'];
+
+    // Check if the component belongs to the lecturer
+    $pdo = getPDO();
+    $stmt = $pdo->prepare("
+        SELECT COUNT(*) FROM assessment_components
+        WHERE component_id = :component_id AND lecturer_id = :lecturer_id
+    ");
+    $stmt->execute(['component_id' => $component_id, 'lecturer_id' => $lecturer_id]);
+    $componentExists = $stmt->fetchColumn();
+
+    if (!$componentExists) {
+        $response->getBody()->write(json_encode(['error' => 'Component does not belong to this lecturer']));
+        return $response->withStatus(400)->withHeader('Content-Type', 'application/json');
+    }
+
+    // Update the assessment component
+    $stmt_update = $pdo->prepare("
+        UPDATE assessment_components
+        SET component_name = :component_name, max_mark = :max_mark
+        WHERE component_id = :component_id
+    ");
+    $stmt_update->execute([
+        'component_name' => $component_name,
+        'max_mark' => $max_mark,
+        'component_id' => $component_id
+    ]);
+
+    $response->getBody()->write(json_encode(['message' => 'Assessment component updated successfully']));
+    return $response->withHeader('Content-Type', 'application/json');
+});
+
+// route to clear all assessment marks for a specific assessment component
+$app->delete('/lecturer/{lecturer_id}/assessment-components/{component_id}/clear-all', function (Request $request, Response $response, $args) {
+    $lecturer_id = $args['lecturer_id'];
+    $component_id = $args['component_id'];  // This should be the correct component_id
+
+    // Check if the component belongs to the lecturer
+    $pdo = getPDO();
+    $stmt = $pdo->prepare("
+        SELECT COUNT(*) FROM assessment_components
+        WHERE component_id = :component_id AND lecturer_id = :lecturer_id
+    ");
+    $stmt->execute(['component_id' => $component_id, 'lecturer_id' => $lecturer_id]);
+    $componentExists = $stmt->fetchColumn();
+
+    if (!$componentExists) {
+        $response->getBody()->write(json_encode(['error' => 'Component does not belong to this lecturer']));
+        return $response->withStatus(400)->withHeader('Content-Type', 'application/json');
+    }
+
+    // Delete all marks for the specified component
+    $stmt_delete_marks = $pdo->prepare("
+        DELETE FROM assessment_marks WHERE component_id = :component_id
+    ");
+    $stmt_delete_marks->execute(['component_id' => $component_id]);
+
+    $response->getBody()->write(json_encode(['message' => 'All marks for this assessment component have been cleared']));
+    return $response->withHeader('Content-Type', 'application/json');
+});
+
+// route to delete an assessment component
+$app->delete('/lecturer/{lecturer_id}/delete-assessment-components/{component_id}', function (Request $request, Response $response, $args) {
+    $lecturer_id = $args['lecturer_id'];
+    $component_id = $args['component_id'];
+
+    $pdo = getPDO();
+    $stmt = $pdo->prepare("DELETE FROM assessment_components WHERE component_id = :component_id AND lecturer_id = :lecturer_id");
+    $stmt->execute(['component_id' => $component_id, 'lecturer_id' => $lecturer_id]);
+
+    $response->getBody()->write(json_encode(['message' => 'Assessment component deleted successfully']));
     return $response->withHeader('Content-Type', 'application/json');
 });
 

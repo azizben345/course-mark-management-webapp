@@ -1,59 +1,207 @@
 <template>
   <div>
-    <!-- Form to create/update enrollment -->
-    <form @submit.prevent="createOrUpdateEnrollment">
-      <label>Matric No:</label>
-      <input v-model="enrollment.matric_no" type="text" />
-      <label>Assessment Marks:</label>
-      <div v-for="(assessment, index) in assessments" :key="index">
-        <label>{{ assessment.component_name }}:</label>
-        <input v-model="assessmentMarks[index]" type="number" />
+    <h2>Assessment Components</h2>
+
+    <!-- Loop through each course and display a table for each -->
+    <div v-for="course in courses" :key="course.course_code">
+      <h3>{{ course.course_name }} ({{ course.course_code }})</h3>
+
+      <!-- Table for each course -->
+      <table>
+        <thead>
+          <tr>
+            <th>No.</th>
+            <th>Component ID</th>
+            <th>Component Name</th>
+            <th>Max Mark</th>
+            <th>Student Count</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-for="(component, index) in course.assessments" :key="component.component_id">
+            <td>{{ index + 1 }}</td>
+            <td>{{ component.component_id }}</td>
+            <td>{{ component.component_name }}</td>
+            <td>{{ component.max_mark }}</td>
+            <td>{{ component.student_count }}</td>
+            <td>
+              <button @click="editComponent(component)">Edit</button>
+              <button @click="deleteComponent(component.component_id)">Delete</button>
+              <button @click="clearAllMarks(component)">Clear All Marks</button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+
+      <!-- Form to add a new assessment component -->
+      <div>
+        <h4>Add Assessment Component</h4>
+        <form @submit.prevent="createAssessmentComponent(course.course_code)">
+          <input type="text" v-model="newComponent.component_name" placeholder="Component Name" required />
+          <input type="number" v-model="newComponent.max_mark" placeholder="Max Mark" required />
+          <button type="submit">Create</button>
+        </form>
       </div>
-      <label>Final Exam Mark:</label>
-      <input v-model="enrollment.final_exam_mark" type="number" />
-      <button type="submit">Save</button>
-    </form>
+    </div>
   </div>
 </template>
 
 <script>
 export default {
+  name: 'AssessmentLecturer',
   data() {
     return {
-      enrollment: {
-        matric_no: '',
-        final_exam_mark: ''
+      courses: [], // Store all courses with their assessment components
+      newComponent: {
+        component_name: '',
+        max_mark: null,
       },
-      assessments: [
-        { component_id: 1, component_name: 'Assignment 1' },
-        { component_id: 2, component_name: 'Quiz 1' }
-      ],
-      assessmentMarks: []  // For capturing input for each assessment
     };
   },
+  created() {
+    this.fetchCourses(); // Fetch courses when the component is created
+  },
   methods: {
-    async createOrUpdateEnrollment() {
-      const data = {
-        student_matric_no: this.enrollment.matric_no,
-        course_code: 'SEEE3143',  // Example course code
-        lecturer_id: localStorage.getItem('username'),  // Get lecturer_id from localStorage
-        academic_year: '2024/2025',
-        assessment_marks: this.assessmentMarks.map((mark, index) => ({
-          component_id: this.assessments[index].component_id,
-          mark_obtained: mark
-        })),
-        final_exam_mark: this.enrollment.final_exam_mark
-      };
+    async fetchCourses() {
+      const lecturerId = localStorage.getItem('username');  // Get the lecturer's username (which acts as lecturer_id)
 
-      // If creating, call the POST endpoint
-      await fetch('http://localhost:8000/enrollments', {
+      if (!lecturerId) {
+        console.error('No lecturer username found in localStorage');
+        return;
+      }
+
+      const response = await fetch(`http://localhost:8000/lecturer/${lecturerId}/get-assessment-components`);
+      const data = await response.json();
+
+      // Map and group assessments by course_code
+      const groupedCourses = Object.keys(data).map(courseCode => ({
+        course_code: courseCode,
+        course_name: data[courseCode][0].course_name,  // Use the first component's course_name as the course name
+        assessments: data[courseCode],
+      }));
+
+      this.courses = groupedCourses;  // Assign grouped courses to the component
+    },
+
+    async createAssessmentComponent(course_code) {
+      const lecturerId = localStorage.getItem('username');
+      const response = await fetch(`http://localhost:8000/lecturer/${lecturerId}/create-assessment-components`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data)
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          course_code: course_code,
+          component_name: this.newComponent.component_name,
+          max_mark: this.newComponent.max_mark,
+        }),
       });
 
-      // Handle success or failure
-    }
-  }
+      const data = await response.json();
+      if (data.message) {
+        alert('Assessment component created successfully');
+        this.fetchCourses(); // Refresh the courses data
+        this.newComponent.component_name = '';
+        this.newComponent.max_mark = null;``
+      }
+    },
+
+    editComponent(component) {
+      const component_id = component.component_id;
+      this.$router.push({
+      path: `/lecturer/edit-assessment/${component_id}`,
+      params: { component_id: component_id },
+      });
+    },
+
+    async deleteComponent(component_id) {
+      // Find the component by component_id to check student_count
+      let component = null;
+      for (const course of this.courses) {
+      component = course.assessments.find(c => c.component_id === component_id);
+      if (component) break;
+      }
+      if (!component) {
+      alert('Component not found');
+      return;
+      }
+      if (component.student_count > 0) {
+      alert('Cannot delete: There are students with marks for this component.');
+      return;
+      }
+
+      const lecturerId = localStorage.getItem('username');
+      const response = await fetch(`http://localhost:8000/lecturer/${lecturerId}/delete-assessment-components/${component_id}`, {
+      method: 'DELETE',
+      });
+      const data = await response.json();
+      if (data.message) {
+      alert('Assessment component deleted successfully');
+      this.fetchCourses(); // Refresh the courses data
+      }
+    },
+
+    // Method for "Clear All" button
+    async clearAllMarks(component) {
+      const lecturerId = localStorage.getItem('username'); // Get the lecturer's username (which acts as lecturer_id)
+
+      if (!lecturerId) {
+        console.error("No lecturer username found in localStorage");
+        return;
+      }
+
+      const component_id = component.component_id;
+
+      const response = await fetch(`http://localhost:8000/lecturer/${lecturerId}/assessment-components/${component_id}/clear-all`, {
+        method: 'DELETE',
+      });
+
+      const data = await response.json();
+
+      if (data.message) {
+        alert('All marks for this assessment component have been cleared');
+        this.fetchCourses();  // Refresh the courses data
+      } else {
+        console.error('Error clearing marks:', data);
+      }
+    },
+
+  },
 };
 </script>
+
+<style scoped>
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+table th, table td {
+  padding: 8px 12px;
+  border: 1px solid #ddd;
+  text-align: left;
+}
+
+button {
+  padding: 5px 10px;
+  cursor: pointer;
+  background-color: #2d3748;
+  color: white;
+  border: none;
+  border-radius: 4px;
+}
+
+button:hover {
+  background-color: #4a5568;
+}
+
+form input {
+  margin: 5px;
+}
+
+form button {
+  background-color: #4CAF50;
+  color: white;
+}
+</style>
