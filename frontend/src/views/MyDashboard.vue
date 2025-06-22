@@ -64,6 +64,12 @@ export default {
       localStorage.removeItem('role');  // Remove the role when logging out
       this.$router.push('/');  // Redirect to the login page
     }
+  },
+  mounted() {
+    const username = localStorage.getItem('username');
+    const jwt = localStorage.getItem('jwt');
+    console.log('Username:', username);
+    console.log('JWT:', jwt);
   }
 };
 </script>

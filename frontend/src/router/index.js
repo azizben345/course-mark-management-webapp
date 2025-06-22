@@ -11,6 +11,9 @@ import MyLogin from '../views/MyLogin.vue';
 // // Lecturer Views
 import ManageStudents from '../views/Lecturer/ManageStudents.vue';
 import AssessmentLecturerEntry from '../views/Lecturer/AssessmentLecturer.vue';
+import EditEnrollment from '../views/Lecturer/EditEnrollment.vue';
+import AssessmentEdit from '../views/Lecturer/EditComponent.vue';
+import ManageComponent from '../views/Lecturer/ManageComponent.vue';
 // import FinalExamEntry from '../views/FinalExamEntry.vue';
 // import Analytics from '../views/Analytics.vue';
 // import ExportCSV from '../views/ExportCSV.vue';
@@ -53,6 +56,11 @@ const routes = [
   // // Lecturer Routes
   { path: '/lecturer/manage-students', component: ManageStudents },
   { path: '/lecturer/assessments', component: AssessmentLecturerEntry },
+  {
+    path: '/edit-enrollment/:enrollment_id', name: 'editEnrollment', component: EditEnrollment, props: true  // Pass the enrollment_id as a prop to the EditEnrollment component
+  },
+  { path: '/lecturer/edit-assessment/:component_id', component: AssessmentEdit, props: true },
+  { path: '/lecturer/manage-component/:component_id', component: ManageComponent },
   // { path: '/lecturer/final-exam', component: FinalExamEntry },
   // { path: '/lecturer/analytics', component: Analytics },
   // { path: '/lecturer/export', component: ExportCSV },
