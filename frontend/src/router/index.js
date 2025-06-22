@@ -3,6 +3,7 @@ import { createRouter, createWebHashHistory } from 'vue-router';
 
 // Universal Views
 import MyDashboard from '../views/MyDashboard.vue';
+import MyRegister from '../views/MyRegister.vue';
 import MyLogin from '../views/MyLogin.vue';
 // import DashboardLecturer from '../views/DashboardLecturer.vue';
 // import DashboardStudent from '../views/DashboardStudent.vue';
@@ -45,6 +46,7 @@ import ManageUsers from '../views/Admin/ManageUsers.vue';
 
 const routes = [
   { path: '/', component: MyLogin },
+  { path: '/register', component: MyRegister},
 
   // Dashboards
   { path: '/dashboard', component: MyDashboard },
