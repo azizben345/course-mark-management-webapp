@@ -54,6 +54,7 @@
         </tbody>
       </table>
     </div>
+    <button @click="goToDashboard" style="margin-bottom: 16px;">Back to Dashboard</button>
   </div>
 </template>
 
@@ -71,13 +72,20 @@ export default {
   methods: {
     async fetchStudents() {
       const lecturerId = localStorage.getItem('username');  // Get the lecturer's username (which acts as lecturer_id)
+      const jwt = localStorage.getItem('jwt');  
 
-      if (!lecturerId) {
-        console.error("No lecturer username found in localStorage");
+      if (!lecturerId || !jwt) {
+        console.error("No user found in localStorage");
         return;  // Exit if no lecturer_id is found
       }
 
-      const response = await fetch(`http://localhost:8000/manage-students/${lecturerId}`);
+      const response = await fetch(`http://localhost:8000/manage-students/${lecturerId}`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${jwt}`,
+          'Content-Type': 'application/json'
+        }
+      });
       const data = await response.json();
 
       this.courses = data.courses;  // Assign courses data to the courses array
@@ -98,12 +106,14 @@ export default {
     async saveStudent(student) {
       // Update the final exam mark and recalculate the total
       const finalExamMark = student.newFinalExamMark;
+      const jwt = localStorage.getItem('jwt');  
 
       // Make an API call to save the updated final exam mark
       const response = await fetch(`http://localhost:8000/students/${student.enrollment_id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${jwt}`,
         },
         body: JSON.stringify({
           final_exam_mark: finalExamMark,
@@ -133,9 +143,13 @@ export default {
     },
 
     async deleteStudent(enrollment_id) {
+      const jwt = localStorage.getItem('jwt');  
       // Send DELETE request to the backend
       const response = await fetch(`http://localhost:8000/students/${enrollment_id}`, {
-        method: 'DELETE'
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${jwt}`,
+        },
       });
       const data = await response.json();
 
@@ -143,6 +157,10 @@ export default {
         alert('Student deleted successfully');
         this.fetchStudents();  // Refresh the student list
       }
+    },
+
+    goToDashboard() {
+      this.$router.push('/dashboard');  // Redirect to the dashboard
     }
   }
 };

@@ -69,8 +69,14 @@ export default {
     async fetchComponent() {
       const component_id = this.$route.params.component_id;  // Get component_id from URL params
       const lecturerId = localStorage.getItem('username'); // Get lecturer_id from localStorage
+      const jwt = localStorage.getItem('jwt');  
 
-      const response = await fetch(`http://localhost:8000/lecturer/${lecturerId}/get-assessment-component/${component_id}`);
+      const response = await fetch(`http://localhost:8000/lecturer/${lecturerId}/get-assessment-component/${component_id}`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${jwt}`
+        }
+      });
       const data = await response.json();
 
       if (data && data.component) {
@@ -82,11 +88,13 @@ export default {
     async updateComponent() {
       const lecturerId = localStorage.getItem('username');  // Get lecturer_id from localStorage
       const component_id = this.$route.params.component_id;  // Get component_id from URL params
+      const jwt = localStorage.getItem('jwt');  
 
       const response = await fetch(`http://localhost:8000/lecturer/${lecturerId}/assessment-components/${component_id}/update`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${jwt}`
         },
         body: JSON.stringify({
           component_name: this.component.component_name,

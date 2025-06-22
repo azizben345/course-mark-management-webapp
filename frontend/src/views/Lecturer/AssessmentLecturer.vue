@@ -44,6 +44,7 @@
         </form>
       </div>
     </div>
+    <button @click="goToDashboard" style="margin-bottom: 16px;">Back to Dashboard</button>
   </div>
 </template>
 
@@ -65,13 +66,15 @@ export default {
   methods: {
     async fetchCourses() {
       const lecturerId = localStorage.getItem('username');  // Get the lecturer's username (which acts as lecturer_id)
+      const jwt = localStorage.getItem('jwt');  
 
-      if (!lecturerId) {
-        console.error('No lecturer username found in localStorage');
-        return;
-      }
-
-      const response = await fetch(`http://localhost:8000/lecturer/${lecturerId}/get-assessment-components`);
+      const response = await fetch(`http://localhost:8000/lecturer/${lecturerId}/get-assessment-components`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${jwt}`,
+          'Content-Type': 'application/json'
+        }
+      });
       const data = await response.json();
 
       // Map and group assessments by course_code
@@ -86,10 +89,13 @@ export default {
 
     async createAssessmentComponent(course_code) {
       const lecturerId = localStorage.getItem('username');
+      const jwt = localStorage.getItem('jwt');  
+
       const response = await fetch(`http://localhost:8000/lecturer/${lecturerId}/create-assessment-components`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${jwt}`
         },
         body: JSON.stringify({
           course_code: course_code,
@@ -118,6 +124,8 @@ export default {
     async deleteComponent(component_id) {
       // Find the component by component_id to check student_count
       let component = null;
+      const jwt = localStorage.getItem('jwt');  
+
       for (const course of this.courses) {
       component = course.assessments.find(c => c.component_id === component_id);
       if (component) break;
@@ -133,18 +141,22 @@ export default {
 
       const lecturerId = localStorage.getItem('username');
       const response = await fetch(`http://localhost:8000/lecturer/${lecturerId}/delete-assessment-components/${component_id}`, {
-      method: 'DELETE',
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${jwt}`
+        }
       });
       const data = await response.json();
       if (data.message) {
-      alert('Assessment component deleted successfully');
-      this.fetchCourses(); // Refresh the courses data
+        alert('Assessment component deleted successfully');
+        this.fetchCourses(); // Refresh the courses data
       }
     },
 
     // Method for "Clear All" button
     async clearAllMarks(component) {
-      const lecturerId = localStorage.getItem('username'); // Get the lecturer's username (which acts as lecturer_id)
+      const lecturerId = localStorage.getItem('username'); // get the lecturer's username (equals to lecturer_id)
+      const jwt = localStorage.getItem('jwt');  
 
       if (!lecturerId) {
         console.error("No lecturer username found in localStorage");
@@ -155,6 +167,9 @@ export default {
 
       const response = await fetch(`http://localhost:8000/lecturer/${lecturerId}/assessment-components/${component_id}/clear-all`, {
         method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${jwt}`
+        }
       });
 
       const data = await response.json();
@@ -165,6 +180,10 @@ export default {
       } else {
         console.error('Error clearing marks:', data);
       }
+    },
+
+    goToDashboard() {
+      this.$router.push('/dashboard'); // Redirect to the dashboard
     },
 
   },

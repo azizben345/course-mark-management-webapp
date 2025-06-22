@@ -169,7 +169,7 @@ $app->get('/manage-students/{lecturer_id}', function (Request $request, Response
     ]));
 
     return $response->withHeader('Content-Type', 'application/json');
-});
+})->add($jwtMiddleware);
 
 // create enrollment route
 $app->post('/enrollments', function (Request $request, Response $response) {
@@ -224,7 +224,7 @@ $app->post('/enrollments', function (Request $request, Response $response) {
     // Return a success response
     $response->getBody()->write(json_encode(['message' => 'Enrollment created successfully.']));
     return $response->withHeader('Content-Type', 'application/json');
-});
+})->add($jwtMiddleware);
 
 // update enrollment route
 $app->put('/students/{enrollment_id}', function (Request $request, Response $response, $args) {
@@ -261,7 +261,7 @@ $app->put('/students/{enrollment_id}', function (Request $request, Response $res
 
     $response->getBody()->write(json_encode(['message' => 'Student record updated successfully']));
     return $response->withHeader('Content-Type', 'application/json');
-});
+})->add($jwtMiddleware);
 
 // delete enrollment route
 $app->delete('/students/{enrollment_id}', function (Request $request, Response $response, $args) {
@@ -275,7 +275,7 @@ $app->delete('/students/{enrollment_id}', function (Request $request, Response $
 
     $response->getBody()->write(json_encode(['message' => 'Student record deleted successfully']));
     return $response->withHeader('Content-Type', 'application/json');
-});
+})->add($jwtMiddleware);
 
 // get courses assigned to a lecturer
 // Route to fetch courses assigned to the lecturer
@@ -295,7 +295,7 @@ $app->get('/lecturer/{lecturer_id}/courses', function (Request $request, Respons
 
     $response->getBody()->write(json_encode($courses));
     return $response->withHeader('Content-Type', 'application/json');
-});
+})->add($jwtMiddleware);
 
 // route to get or fetch all assessment components based on the lecturer's courses
 $app->get('/lecturer/{lecturer_id}/get-assessment-components', function (Request $request, Response $response, $args) {
@@ -317,7 +317,7 @@ $app->get('/lecturer/{lecturer_id}/get-assessment-components', function (Request
 
     $response->getBody()->write(json_encode($groupedComponents));
     return $response->withHeader('Content-Type', 'application/json');
-});
+})->add($jwtMiddleware);
 
 // route to get assessment components based on component_id
 $app->get('/lecturer/{lecturer_id}/get-assessment-component/{component_id}', function (Request $request, Response $response, $args) {
@@ -347,7 +347,7 @@ $app->get('/lecturer/{lecturer_id}/get-assessment-component/{component_id}', fun
     }
 
     return $response->withHeader('Content-Type', 'application/json');
-});
+})->add($jwtMiddleware);
 
 // route to create a new assessment component
 $app->post('/lecturer/{lecturer_id}/create-assessment-components', function (Request $request, Response $response, $args) {
@@ -372,7 +372,7 @@ $app->post('/lecturer/{lecturer_id}/create-assessment-components', function (Req
 
     $response->getBody()->write(json_encode(['message' => 'Assessment component created successfully']));
     return $response->withHeader('Content-Type', 'application/json');
-});
+})->add($jwtMiddleware);
 
 // route to update an assessment component
 $app->put('/lecturer/{lecturer_id}/assessment-components/{component_id}/update', function (Request $request, Response $response, $args) {
@@ -412,7 +412,7 @@ $app->put('/lecturer/{lecturer_id}/assessment-components/{component_id}/update',
 
     $response->getBody()->write(json_encode(['message' => 'Assessment component updated successfully']));
     return $response->withHeader('Content-Type', 'application/json');
-});
+})->add($jwtMiddleware);
 
 // route to clear all assessment marks for a specific assessment component
 $app->delete('/lecturer/{lecturer_id}/assessment-components/{component_id}/clear-all', function (Request $request, Response $response, $args) {
@@ -441,7 +441,7 @@ $app->delete('/lecturer/{lecturer_id}/assessment-components/{component_id}/clear
 
     $response->getBody()->write(json_encode(['message' => 'All marks for this assessment component have been cleared']));
     return $response->withHeader('Content-Type', 'application/json');
-});
+})->add($jwtMiddleware);
 
 // route to delete an assessment component
 $app->delete('/lecturer/{lecturer_id}/delete-assessment-components/{component_id}', function (Request $request, Response $response, $args) {
@@ -454,7 +454,7 @@ $app->delete('/lecturer/{lecturer_id}/delete-assessment-components/{component_id
 
     $response->getBody()->write(json_encode(['message' => 'Assessment component deleted successfully']));
     return $response->withHeader('Content-Type', 'application/json');
-});
+})->add($jwtMiddleware);
 
 // GET ALL students
 $app->get('/students', function ($request, $response) {
