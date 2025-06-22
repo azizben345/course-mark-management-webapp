@@ -1,6 +1,5 @@
-<!-- src/controllers/LecturerController.php -->
 <?php
-
+//src/controllers/LecturerController.php
 namespace App\Controllers;
 
 use Slim\Psr7\Request;

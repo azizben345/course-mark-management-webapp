@@ -1,6 +1,5 @@
-<!-- src/models/AssessmentComponent.php -->
 <?php
-
+//src/models/AssessmentComponent.php
 namespace App\Models;
 
 use \PDO;

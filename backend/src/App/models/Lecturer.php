@@ -1,6 +1,5 @@
-<!-- // src/models/Lecturer.php -->
 <?php
-
+// src/models/Lecturer.php
 namespace App\Models;
 
 use \PDO;

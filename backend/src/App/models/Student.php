@@ -1,6 +1,5 @@
-<!-- src/models/Student.php -->
 <?php
-
+//src/models/Student.php
 namespace App\Models;
 
 class Student {
@@ -11,7 +10,6 @@ class Student {
     private $status;
 
     // Define getter and setter methods
-
     public static function getAll($pdo) {
         $stmt = $pdo->query("SELECT * FROM students");
         return $stmt->fetchAll(PDO::FETCH_ASSOC);

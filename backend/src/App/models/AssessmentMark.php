@@ -1,6 +1,5 @@
-<!-- src/models/AssessmentMark.php -->
 <?php
-
+//src/models/AssessmentMark.php
 namespace App\Models;
 
 use \PDO;

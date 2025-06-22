@@ -1,0 +1,152 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Controllers;
+
+use App\db;
+use App\Services\StudentService;
+use PDO;
+use PDOException;
+use InvalidArgumentException;
+use RuntimeException;
+use Firebase\JWT\JWT;
+
+class AuthController{
+    private string $jwtSecretKey;
+
+    public function __construct(private db $database,private StudentService $studentService, string $jwtSecretKey){
+        $this->jwtSecretKey = $jwtSecretKey;
+    }
+
+    public function register(array $registrationData) {
+        $pdo = $this->database->getPDO();
+        $pdo->beginTransaction();
+        
+        try {
+            // 1. Core User Creation
+            $username = $registrationData['username'];
+            $password = $registrationData['password'];
+            $role = $registrationData['role'] ?? 'student'; // Allow client to specify role, or default
+
+            // Validate role against allowed enum values
+            if (!in_array($role, ['admin', 'lecturer', 'student', 'advisor'])) {
+                 throw new InvalidArgumentException("Invalid role specified.");
+            }
+
+            $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
+            if ($hashedPassword === false) { throw new \RuntimeException("Failed to hash password."); }
+
+            $userSql = "INSERT INTO users (username, password, role) VALUES (:username, :password, :role)";
+            $userStmt = $pdo->prepare($userSql);
+            $userStmt->bindParam(':username', $username);
+            $userStmt->bindParam(':password', $hashedPassword);
+            $userStmt->bindParam(':role', $role);
+            $userStmt->execute();
+
+            $newUserId = (int)$pdo->lastInsertId();
+
+            // 2. Role-specific Profile Creation
+            $profileData = [];
+            if ($role === 'student') {
+                $profileData = $this->studentService->createStudentProfile($pdo, $username, $registrationData);
+            } elseif ($role === 'lecturer') {
+                // $profileData = $this->lecturerService->createLecturerProfile($pdo, $username, $registrationData);
+            }
+            // ... handle other roles
+
+            $pdo->commit();
+
+            return [
+                'user_id' => $newUserId,
+                'username' => $username,
+                'role' => $role,
+                'profile_data' => $profileData, // Return profile-specific data if available
+                'message' => 'User registered successfully.'
+            ];
+
+        } catch (PDOException $e) { /* ... rollback and re-throw with context ... */ }
+          catch (InvalidArgumentException $e) { /* ... rollback and re-throw ... */ }
+          catch (\RuntimeException $e) { /* ... rollback and re-throw ... */ }
+    }
+
+    public function login(array $credentials): array
+    {
+        if (empty($credentials['username']) || empty($credentials['password'])) {
+            throw new InvalidArgumentException("Username and password are required.");
+        }
+
+        $username = $credentials['username'];
+        $password = $credentials['password'];
+
+        try {
+            $pdo = $this->database->getPDO();
+
+            // 1. Find the user by username
+            $sql = "SELECT id, username, password, role FROM users WHERE username = :username";
+            $stmt = $pdo->prepare($sql);
+            $stmt->bindParam(':username', $username);
+            $stmt->execute();
+            $user = $stmt->fetch(PDO::FETCH_ASSOC);
+
+            if (!$user) {
+                throw new \RuntimeException("Invalid username or password.", 401); // 401 Unauthorized
+            }
+
+            // 2. Verify the password
+            if (!password_verify($password, $user['password'])) {
+                throw new \RuntimeException("Invalid username or password.", 401); // 401 Unauthorized
+            }
+
+            // 3. Generate JWT if authentication is successful
+            $issuedAt = time();
+            $expirationTime = $issuedAt + 3600; // Token valid for 1 hour (3600 seconds)
+
+            $payload = [
+                'iat'  => $issuedAt,             // Issued at: time when the token was generated
+                'exp'  => $expirationTime,       // Expiration time
+                'iss'  => 'your-app-domain.com', // Issuer (e.g., your domain)
+                'data' => [                      // Custom data to include in the token
+                    'id' => $user['id'],
+                    'username' => $user['username'],
+                    'role' => $user['role']
+                ]
+            ];
+
+            // Encode the JWT
+            $token = JWT::encode($payload, $this->jwtSecretKey, 'HS256');
+
+            return [
+                'token' => $token,
+                'user' => [
+                    'id' => $user['id'],
+                    'username' => $user['username'],
+                    'role' => $user['role']
+                ]
+            ];
+
+        } catch (PDOException $e) {
+            throw new \RuntimeException("Database error during login: " . $e->getMessage(), 500, $e);
+        } catch (\RuntimeException $e) {
+            throw $e; // Re-throw authentication failures
+        }
+    }
+
+    public function logout(): array
+    {
+        // For stateless JWTs, there's no server-side session to destroy.
+        // The client-side discarding of the token is the primary "logout" action.
+        // If you had a JWT blacklisting mechanism, you would add the token (or its JTI)
+        // to a blacklist here to invalidate it immediately on the server side
+        // before its natural expiration.
+        // Example for blacklisting (requires a database table/cache and JwtMiddleware update):
+        /*
+        $jwt = $request->getAttribute('jwt'); // Assuming JwtMiddleware adds the decoded token
+        if (isset($jwt->jti) && isset($jwt->exp)) {
+            // Store $jwt->jti in a blacklist with its $jwt->exp
+            // e.g., $this->database->addToBlacklist($jwt->jti, $jwt->exp);
+        }
+        */
+        return ['message' => 'Logged out successfully. Please discard your token on the client side.'];
+    }
+}
