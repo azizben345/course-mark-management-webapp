@@ -4,6 +4,7 @@ import { createRouter, createWebHashHistory } from 'vue-router';
 // Universal Views
 import MyDashboard from '../views/MyDashboard.vue';
 import MyLogin from '../views/MyLogin.vue';
+import MyRegister from '../views/MyRegister.vue';
 // import DashboardLecturer from '../views/DashboardLecturer.vue';
 // import DashboardStudent from '../views/DashboardStudent.vue';
 // import DashboardAdvisor from '../views/DashboardAdvisor.vue';
@@ -42,6 +43,13 @@ import ManageUsers from '../views/Admin/ManageUsers.vue';
 
 const routes = [
   { path: '/', component: MyLogin },
+  { path: '/register', component: MyRegister },
+
+  {
+    path: '/login',
+    name: 'Login',
+    component: MyLogin,
+  },
 
   // Dashboards
   { path: '/dashboard', component: MyDashboard },

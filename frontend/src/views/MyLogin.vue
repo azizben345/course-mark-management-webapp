@@ -2,7 +2,7 @@
   <div>
     <div class="login-container">
       <h2>Login</h2>
-      <form @submit.prevent="loginUser">
+      <form @submit.prevent="login"> <!-- ✅ fixed here -->
         <div>
           <label for="username">Username:</label>
           <input v-model="username" type="text" id="username" required />
@@ -13,12 +13,18 @@
           <input v-model="password" type="password" id="password" required />
         </div>
 
-        <button @click="login">Login</button>
+        <button type="submit">Login</button> <!-- ✅ cleaned this -->
 
+        <p class="register-link">
+          Don't have an account?
+          <router-link to="/register">Register here</router-link>
+        </p>
       </form>
     </div>
+
+    <!-- ✅ improved feedback display -->
     <p v-if="successMessage" class="success">{{ successMessage }}</p>
-    <p v-else-if="errorMessage" class="error">{{ errorMessage }}</p>
+    <p v-if="errorMessage" class="error">{{ errorMessage }}</p>
   </div>
 </template>
 
@@ -35,54 +41,56 @@ export default {
   },
   methods: {
     async login() {
-        try {
-            // Send POST request to /login for authentication
-            const res = await fetch('http://localhost:8000/login', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    username: this.username,
-                    password: this.password
-                })
-            });
+      console.log("Login method triggered");
+      try {
+        const res = await fetch('http://localhost:8000/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            username: this.username,
+            password: this.password
+          })
+        });
 
-            const data = await res.json();
+        const data = await res.json();
+        console.log('Login response:', data);
 
-            if (res.ok && data.token) {
-                // Store JWT token in localStorage
-                localStorage.setItem('jwt', data.token);
+        if (res.ok && data.token) {
+          // Clear messages
+          this.errorMessage = '';
+          this.successMessage = 'Login successful! Redirecting...';
 
-                // Fetch the user's role
-                const roleRes = await fetch('http://localhost:8000/me/role', {
-                    method: 'GET',
-                    headers: {
-                        'Authorization': `Bearer ${data.token}`
-                    }
-                });
+          // Store JWT token
+          localStorage.setItem('jwt', data.token);
 
-                const roleData = await roleRes.json();
-
-                if (roleRes.ok && roleData.role) {
-                    // Store the role in localStorage
-                    localStorage.setItem('role', roleData.role);
-                } else {
-                    console.error('Failed to fetch user role');
-                }
-
-                // Redirect to dashboard
-                this.$router.push('/dashboard');
-            } else {
-                alert(data.error || 'Login failed');
+          // Fetch user role
+          const roleRes = await fetch('http://localhost:8000/me/role', {
+            headers: {
+              'Authorization': `Bearer ${data.token}`
             }
-        } catch (err) {
-            console.error('Login error:', err);
-            alert('Login error. Please try again.');
+          });
+
+          const roleData = await roleRes.json();
+          if (roleRes.ok && roleData.role) {
+            localStorage.setItem('role', roleData.role);
+          } else {
+            console.error('Failed to fetch user role');
+          }
+
+          // Redirect
+          this.$router.push('/dashboard');
+        } else {
+          this.errorMessage = data.error || 'Login failed.';
         }
+
+      } catch (err) {
+        console.error('Login error:', err);
+        this.errorMessage = 'Login error. Please try again.';
+      }
     }
   }
 };
 </script>
-
 
 <style scoped>
 .login-container {
@@ -93,5 +101,20 @@ export default {
 .error {
   color: red;
   margin-top: 10px;
+}
+.success {
+  color: green;
+  margin-top: 10px;
+}
+.register-link {
+  margin-top: 10px;
+  text-align: center;
+}
+.register-link a {
+  color: #007bff;
+  text-decoration: none;
+}
+.register-link a:hover {
+  text-decoration: underline;
 }
 </style>

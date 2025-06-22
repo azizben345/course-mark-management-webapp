@@ -94,9 +94,18 @@ class AuthController{
             }
 
             // 2. Verify the password
-            if (!password_verify($password, $user['password'])) {
+            /*if (!password_verify($password, $user['password'])) {
                 throw new \RuntimeException("Invalid username or password.", 401); // 401 Unauthorized
+            }*/
+
+            if (!password_verify($password, $user['password'])) {
+                error_log("LOGIN FAILED: Password mismatch");
+                error_log("Entered password: " . $password);
+                error_log("Stored hash: " . $user['password']);
+                throw new \RuntimeException("Invalid username or password.", 401);
             }
+
+
 
             // 3. Generate JWT if authentication is successful
             $issuedAt = time();
