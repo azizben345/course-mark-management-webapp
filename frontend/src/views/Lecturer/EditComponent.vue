@@ -42,6 +42,10 @@
       <div>
         <button type="submit">Save</button>
       </div>
+
+      <div>
+        <button @click="$router.push('/lecturer/assessments')">Back to Assessments</button>
+      </div>  
     </form>
   </div>
 </template>

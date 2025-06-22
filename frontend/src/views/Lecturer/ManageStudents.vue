@@ -11,9 +11,8 @@
           <tr>
             <th>Matric No</th>
             <th>Student Name</th>
-            <!-- Dynamically create columns for each assessment component -->
             <th v-for="assessment in course.components" :key="assessment.component_id">
-              {{ assessment.component_name }}
+                {{ assessment.component_name }} ({{ assessment.max_mark }})
             </th>
             <th>Final Exam Mark</th>
             <th>Total</th>
@@ -25,7 +24,6 @@
             <td>{{ student.matric_no }}</td>
             <td>{{ student.student_name }}</td>
 
-            <!-- Dynamically display marks for each assessment -->
             <td v-for="assessment in course.components" :key="assessment.component_id">
               {{ getAssessmentMark(student, assessment.component_name) }}
             </td>
@@ -41,20 +39,27 @@
                 placeholder="Enter Final Exam Mark"
               />
               <span v-else>{{ student.final_exam_mark }}</span>
+              <button 
+                v-if="student.isEditingFinalExam" 
+                @click="student.isEditingFinalExam = false"
+                style="margin-left: 8px; background-color: #e53e3e;"
+              >
+                Cancel
+              </button>
             </td>
 
             <td>{{ student.final_total }}</td>
 
             <td>
-              <button v-if="!student.isEditingFinalExam" @click="editStudent(student)">Edit</button>
+              <button v-if="!student.isEditingFinalExam" @click="editStudent(student)">Edit Final</button>
               <button v-if="student.isEditingFinalExam" @click="saveStudent(student)">Save</button>
-              <button @click="deleteStudent(student.enrollment_id)">Delete</button>
+              <button @click="deleteStudent(student.enrollment_id)">Unenroll</button>
             </td>
           </tr>
         </tbody>
       </table>
     </div>
-    <button @click="goToDashboard" style="margin-bottom: 16px;">Back to Dashboard</button>
+    <button @click="$router.push('/dashboard')" style="margin-bottom: 16px;">Back to Dashboard</button>
   </div>
 </template>
 
@@ -123,48 +128,37 @@ export default {
       const data = await response.json();
       
       if (data.message) {
-        // If the update was successful, recalculate the total for this student
-        this.updateStudentTotal(student);
+        // If the update was successful, re-fetch the students to get updated data
+        await this.fetchStudents();
         student.isEditingFinalExam = false; // Stop editing
       } else {
         alert("Failed to update the final exam mark.");
       }
     },
 
-    updateStudentTotal(student) {
-      // Recalculate total based on CA marks (assumed to be 70%) and final exam (30%)
-      let totalAssessmentMarks = 0;
-      student.marks.forEach(mark => {
-        totalAssessmentMarks += parseFloat(mark.mark_obtained) || 0;  // Summing up marks
-      });
-
-      // Assuming that final exam mark is 30% and the CA total is 70%
-      student.final_total = (totalAssessmentMarks * 0.7) + (parseFloat(student.final_exam_mark) * 0.3);
-    },
-
     async deleteStudent(enrollment_id) {
+      if (!confirm('Are you sure you want to unenroll this student?')) {
+      return;
+      }
       const jwt = localStorage.getItem('jwt');  
       // Send DELETE request to the backend
       const response = await fetch(`http://localhost:8000/students/${enrollment_id}`, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${jwt}`,
-        },
+      method: 'DELETE',
+      headers: {
+        'Authorization': `Bearer ${jwt}`,
+      },
       });
       const data = await response.json();
 
       if (data.message) {
-        alert('Student deleted successfully');
-        this.fetchStudents();  // Refresh the student list
+      alert('Student deleted successfully');
+      this.fetchStudents();  // Refresh the student list
       }
     },
-
-    goToDashboard() {
-      this.$router.push('/dashboard');  // Redirect to the dashboard
-    }
   }
 };
 </script>
+
 
 <style scoped>
 table {

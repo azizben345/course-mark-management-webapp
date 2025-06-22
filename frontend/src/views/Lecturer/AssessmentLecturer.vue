@@ -24,7 +24,12 @@
             <td>{{ component.component_id }}</td>
             <td>{{ component.component_name }}</td>
             <td>{{ component.max_mark }}</td>
-            <td>{{ component.student_count }}</td>
+            <td>
+              {{ component.student_count }}
+              <button @click="$router.push(`/lecturer/manage-component/${component.component_id}`)" style="margin-left: 8px;">
+              Manage
+              </button>
+            </td>
             <td>
               <button @click="editComponent(component)">Edit</button>
               <button @click="deleteComponent(component.component_id)">Delete</button>
@@ -44,7 +49,7 @@
         </form>
       </div>
     </div>
-    <button @click="goToDashboard" style="margin-bottom: 16px;">Back to Dashboard</button>
+    <button @click="$router.push('/dashboard')" style="margin-bottom: 16px;">Back to Dashboard</button>
   </div>
 </template>
 
@@ -53,7 +58,7 @@ export default {
   name: 'AssessmentLecturer',
   data() {
     return {
-      courses: [], // Store all courses with their assessment components
+      courses: [], // store all courses with their assessment components
       newComponent: {
         component_name: '',
         max_mark: null,
@@ -61,7 +66,7 @@ export default {
     };
   },
   created() {
-    this.fetchCourses(); // Fetch courses when the component is created
+    this.fetchCourses(); // fetch courses when the component is created
   },
   methods: {
     async fetchCourses() {
@@ -180,10 +185,6 @@ export default {
       } else {
         console.error('Error clearing marks:', data);
       }
-    },
-
-    goToDashboard() {
-      this.$router.push('/dashboard'); // Redirect to the dashboard
     },
 
   },

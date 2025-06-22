@@ -91,7 +91,8 @@ $app->get('/manage-students/{lecturer_id}', function (Request $request, Response
         SELECT 
             ac.component_id, 
             ac.component_name, 
-            ac.course_code
+            ac.course_code,
+            ac.max_mark
         FROM 
             assessment_components ac
         WHERE 
@@ -108,7 +109,8 @@ $app->get('/manage-students/{lecturer_id}', function (Request $request, Response
             s.student_name, 
             e.enrollment_id, 
             e.final_exam_mark, 
-            e.final_total
+            e.final_total,
+            e.total_ca
         FROM 
             enrollments e
         JOIN 
@@ -125,6 +127,7 @@ $app->get('/manage-students/{lecturer_id}', function (Request $request, Response
         if (!isset($courses[$assessment['course_code']])) {
             $courses[$assessment['course_code']] = [
                 'course_code' => $assessment['course_code'],
+                'course_name' => $assessment['course_name'],
                 'components' => [],
                 'students' => []
             ];
@@ -133,11 +136,13 @@ $app->get('/manage-students/{lecturer_id}', function (Request $request, Response
         $courses[$assessment['course_code']]['components'][] = $assessment;
     }
 
-    // Add students to the relevant courses
+    // Add students to the relevant courses and calculate total_ca
     foreach ($students as $student) {
         $course_code = $student['course_code'];
         if (isset($courses[$course_code])) {
             $student['marks'] = [];
+            $total_ca = 0;  // Variable to accumulate continuous assessment marks
+
             foreach ($courses[$course_code]['components'] as $assessment) {
                 $stmt_marks = $pdo->prepare("
                     SELECT 
@@ -152,11 +157,32 @@ $app->get('/manage-students/{lecturer_id}', function (Request $request, Response
                     'component_id' => $assessment['component_id']
                 ]);
                 $mark = $stmt_marks->fetch();
+
+                $mark_obtained = $mark ? $mark['mark_obtained'] : 0;  // Default to 0 if no mark found
+                $total_ca += $mark_obtained;  // Accumulate marks for total_ca
+
+                // Add the mark to the student's marks array
                 $student['marks'][] = [
                     'component_name' => $assessment['component_name'],
-                    'mark_obtained' => $mark ? $mark['mark_obtained'] : 'N/A'
+                    'mark_obtained' => $mark_obtained
                 ];
             }
+
+            // Add the final exam mark to calculate final_total
+            $final_exam_mark = $student['final_exam_mark'] ?: 0;
+            $final_total = $total_ca + $final_exam_mark;
+
+            // Update the total_ca and final_total in the enrollments table
+            $stmt_update = $pdo->prepare("
+                UPDATE enrollments
+                SET total_ca = :total_ca, final_total = :final_total
+                WHERE enrollment_id = :enrollment_id
+            ");
+            $stmt_update->execute([
+                'total_ca' => $total_ca,
+                'final_total' => $final_total,
+                'enrollment_id' => $student['enrollment_id']
+            ]);
 
             // Add the student to the correct course
             $courses[$course_code]['students'][] = $student;
@@ -226,42 +252,43 @@ $app->post('/enrollments', function (Request $request, Response $response) {
     return $response->withHeader('Content-Type', 'application/json');
 })->add($jwtMiddleware);
 
-// update enrollment route
+// update enrollment route [to update final exam mark]
 $app->put('/students/{enrollment_id}', function (Request $request, Response $response, $args) {
     $enrollment_id = $args['enrollment_id'];
     $data = json_decode($request->getBody()->getContents(), true);
-    $final_exam_mark = $data['final_exam_mark'] ?? 0;
 
-    // Get the student's assessment marks from the database
+    $final_exam_mark = $data['final_exam_mark'] ?? null;
+
+    if (!$final_exam_mark) {
+        $response->getBody()->write(json_encode(['error' => 'Final exam mark is required']));
+        return $response->withStatus(400)->withHeader('Content-Type', 'application/json');
+    }
+
     $pdo = getPDO();
-    $stmt_marks = $pdo->prepare("
-        SELECT SUM(am.mark_obtained) as ca_total
-        FROM assessment_marks am
-        JOIN enrollments e ON am.enrollment_id = e.enrollment_id
-        WHERE e.enrollment_id = :enrollment_id
-    ");
-    $stmt_marks->execute(['enrollment_id' => $enrollment_id]);
-    $marks = $stmt_marks->fetch();
-
-    // Calculate the total (70% CA, 30% final exam)
-    $ca_total = $marks['ca_total'] ?? 0;
-    $final_total = ($ca_total * 0.7) + ($final_exam_mark * 0.3);
-
-    // Update the final_exam_mark and final_total in the database
-    $stmt_update = $pdo->prepare("
+    $stmt = $pdo->prepare("
         UPDATE enrollments
-        SET final_exam_mark = :final_exam_mark, final_total = :final_total
+        SET final_exam_mark = :final_exam_mark
         WHERE enrollment_id = :enrollment_id
     ");
-    $stmt_update->execute([
+    $stmt->execute([
         'final_exam_mark' => $final_exam_mark,
-        'final_total' => $final_total,
         'enrollment_id' => $enrollment_id
     ]);
 
-    $response->getBody()->write(json_encode(['message' => 'Student record updated successfully']));
+    // Recalculate the final_total after updating final_exam_mark
+    $stmt_recalc = $pdo->prepare("
+        UPDATE enrollments
+        SET final_total = (SELECT total_ca + :final_exam_mark FROM enrollments WHERE enrollment_id = :enrollment_id)
+        WHERE enrollment_id = :enrollment_id
+    ");
+    $stmt_recalc->execute([
+        'final_exam_mark' => $final_exam_mark,
+        'enrollment_id' => $enrollment_id
+    ]);
+
+    $response->getBody()->write(json_encode(['message' => 'Final exam mark updated successfully']));
     return $response->withHeader('Content-Type', 'application/json');
-})->add($jwtMiddleware);
+});
 
 // delete enrollment route
 $app->delete('/students/{enrollment_id}', function (Request $request, Response $response, $args) {
@@ -349,6 +376,47 @@ $app->get('/lecturer/{lecturer_id}/get-assessment-component/{component_id}', fun
     return $response->withHeader('Content-Type', 'application/json');
 })->add($jwtMiddleware);
 
+// route to get components for student component
+$app->get('/lecturer/{lecturer_id}/assessment-components/{component_id}', function (Request $request, Response $response, $args) {
+    $lecturer_id = $args['lecturer_id'];  // Get lecturer_id from URL
+    $component_id = $args['component_id'];  // Get component_id from URL
+
+    $pdo = getPDO();
+
+    // Get component details
+    $stmt_component = $pdo->prepare("
+        SELECT * 
+        FROM assessment_components 
+        WHERE component_id = :component_id AND lecturer_id = :lecturer_id
+    ");
+    $stmt_component->execute(['component_id' => $component_id, 'lecturer_id' => $lecturer_id]);
+    $component = $stmt_component->fetch();
+
+    // Get students enrolled in this component
+    $stmt_students = $pdo->prepare("
+        SELECT 
+            e.enrollment_id,
+            e.student_matric_no,
+            s.student_name,
+            am.mark_id,
+            am.mark_obtained
+        FROM enrollments e
+        JOIN students s ON e.student_matric_no = s.matric_no
+        LEFT JOIN assessment_marks am ON e.enrollment_id = am.enrollment_id AND am.component_id = :component_id
+        WHERE e.course_code = :course_code
+    ");
+    $stmt_students->execute(['component_id' => $component_id, 'course_code' => $component['course_code']]);
+    $students = $stmt_students->fetchAll();
+
+    // Send data back
+    $response->getBody()->write(json_encode([
+        'component' => $component,
+        'students' => $students
+    ]));
+
+    return $response->withHeader('Content-Type', 'application/json');
+});
+
 // route to create a new assessment component
 $app->post('/lecturer/{lecturer_id}/create-assessment-components', function (Request $request, Response $response, $args) {
     $lecturer_id = $args['lecturer_id'];
@@ -373,6 +441,49 @@ $app->post('/lecturer/{lecturer_id}/create-assessment-components', function (Req
     $response->getBody()->write(json_encode(['message' => 'Assessment component created successfully']));
     return $response->withHeader('Content-Type', 'application/json');
 })->add($jwtMiddleware);
+
+// route to update an assessment marks - only mark update
+// Update existing assessment mark
+$app->put('/lecturer/{lecturer_id}/assessment-marks/{component_id}/update-mark/{enrollment_id}', function (Request $request, Response $response, $args) {
+    $component_id = $args['component_id'];
+    $enrollment_id = $args['enrollment_id'];
+    $data = json_decode($request->getBody()->getContents(), true);
+    $mark_obtained = $data['mark_obtained'];
+
+    $pdo = getPDO();
+    $stmt = $pdo->prepare("UPDATE assessment_marks SET mark_obtained = ? WHERE enrollment_id = ? AND component_id = ?");
+    $stmt->execute([$mark_obtained, $enrollment_id, $component_id]);
+
+    $response->getBody()->write(json_encode(['message' => 'Assessment mark updated successfully']));
+    return $response->withHeader('Content-Type', 'application/json');
+});
+// Check if the assessment mark exists for a student
+$app->get('/lecturer/{lecturer_id}/assessment-marks/{component_id}/check-mark/{enrollment_id}', function (Request $request, Response $response, $args) {
+    $component_id = $args['component_id'];
+    $enrollment_id = $args['enrollment_id'];
+    
+    $pdo = getPDO();
+    $stmt = $pdo->prepare("SELECT 1 FROM assessment_marks WHERE enrollment_id = :enrollment_id AND component_id = :component_id LIMIT 1");
+    $stmt->execute(['enrollment_id' => $enrollment_id, 'component_id' => $component_id]);
+    $exists = $stmt->fetchColumn();
+
+    $response->getBody()->write(json_encode(['exists' => (bool)$exists]));
+    return $response->withHeader('Content-Type', 'application/json');
+});
+// Create new assessment mark if no record exists
+$app->post('/lecturer/{lecturer_id}/assessment-marks/{component_id}/create-mark/{enrollment_id}', function (Request $request, Response $response, $args) {
+    $component_id = $args['component_id'];
+    $enrollment_id = $args['enrollment_id'];
+    $data = json_decode($request->getBody()->getContents(), true);
+    $mark_obtained = $data['mark_obtained'];
+
+    $pdo = getPDO();
+    $stmt = $pdo->prepare("INSERT INTO assessment_marks (enrollment_id, component_id, mark_obtained) VALUES (?, ?, ?)");
+    $stmt->execute([$enrollment_id, $component_id, $mark_obtained]);
+
+    $response->getBody()->write(json_encode(['message' => 'Assessment mark created successfully']));
+    return $response->withHeader('Content-Type', 'application/json');
+});
 
 // route to update an assessment component
 $app->put('/lecturer/{lecturer_id}/assessment-components/{component_id}/update', function (Request $request, Response $response, $args) {
@@ -466,52 +577,65 @@ $app->get('/students', function ($request, $response) {
     return $response->withHeader('Content-Type', 'application/json');
 })->add($jwtMiddleware);
 
-// //GET 1 PRODUCT - accessible to all regs - normal user and admin
-// $app->get('/product/{id}', function ($request, $response, $args) {
-//     $id = $args['id'];
+// get student name based on matric_no
+$app->get('/student-name/{matric_no}', function (Request $request, Response $response, $args) {
+    $matric_no = $args['matric_no'];
 
-//     if (!is_numeric($id)) {
-//         $response->getBody()->write(json_encode(['error' => 'Invalid product ID']));
-//         return $response->withStatus(400)->withHeader('Content-Type', 'application/json');
-//     }
+    $pdo = getPDO();
+    $stmt = $pdo->prepare("SELECT student_name FROM students WHERE matric_no = :matric_no");
+    $stmt->execute(['matric_no' => $matric_no]);
+    $student = $stmt->fetch();
 
-//     $pdo = getPDO();
-//     $stmt = $pdo->prepare("SELECT * FROM PRODUCT WHERE id = ?");
-//     $stmt->execute([$id]);
-//     $product = $stmt->fetch();
+    if ($student) {
+        $response->getBody()->write(json_encode(['name' => $student['student_name']]));
+    } else {
+        $response->getBody()->write(json_encode(['error' => 'Student not found']));
+    }
 
-//     if (!$product) {
-//         $response->getBody()->write(json_encode(['error' => 'Product not found']));
-//         return $response->withStatus(404)->withHeader('Content-Type', 'application/json');
-//     }
+    return $response->withHeader('Content-Type', 'application/json');
+});
 
-//     $response->getBody()->write(json_encode($product));
-//     return $response->withHeader('Content-Type', 'application/json');
-// })->add($jwtMiddleware);
+// create enrollment route
+$app->post('/lecturer/{lecturer_id}/assessment-components/{component_id}/enroll', function (Request $request, Response $response, $args) {
+    $lecturer_id = $args['lecturer_id']; // Get lecturer_id from URL
+    $component_id = $args['component_id']; // Get component_id from URL
+    $data = json_decode($request->getBody()->getContents(), true);
 
-// // POST /product – for admin only
-// $app->post('/product', function ($request, $response) use ($secretKey) {
-//     $jwt = $request->getAttribute('jwt');
+    $matric_no = $data['matric_no'];
+    $student_name = $data['student_name'];
+    $course_code = $data['course_code']; // Get course_code from request body
+    $lecturer_id_from_body = $data['lecturer_id']; // Get lecturer_id from request body
 
-//     if (($jwt->role ?? '') !== 'admin') {
-//         $error = ['error' => 'Access denied: admin only'];
-//         $response->getBody()->write(json_encode($error));
-//         return $response->withStatus(403)->withHeader('Content-Type', 'application/json');
-//     }
+    // Check if the lecturer_id matches the one in the URL (for security)
+    if ($lecturer_id != $lecturer_id_from_body) {
+        $response->getBody()->write(json_encode(['message' => 'Unauthorized request']));
+        return $response->withStatus(403)->withHeader('Content-Type', 'application/json');
+    }
 
-//     $data = json_decode($request->getBody()->getContents(), true);
+    $pdo = getPDO();
 
-//     $pdo = getPDO();
-//     $stmt = $pdo->prepare("INSERT INTO PRODUCT (name, price, image) VALUES (?, ?, ?)");
-//     $stmt->execute([
-//         $data['name'] ?? null,
-//         $data['price'] ?? null,
-//         $data['image'] ?? null
-//     ]);
+    // Check if the student is already enrolled
+    $stmt = $pdo->prepare("SELECT * FROM enrollments WHERE student_matric_no = ? AND course_code = ?");
+    $stmt->execute([$matric_no, $course_code]);
+    $existingEnrollment = $stmt->fetch();
 
-//     $response->getBody()->write(json_encode(['message' => 'Product added']));
-//     return $response->withHeader('Content-Type', 'application/json');
-// })->add(new JwtMiddleware($secretKey));
+    if ($existingEnrollment) {
+        $response->getBody()->write(json_encode(['message' => 'Student is already enrolled in this course']));
+        return $response->withStatus(400)->withHeader('Content-Type', 'application/json');
+    }
+
+    // Insert the new enrollment record
+    try {
+        $stmt = $pdo->prepare("INSERT INTO enrollments (student_matric_no, course_code, academic_year, lecturer_id) VALUES (?, ?, ?, ?)");
+        $stmt->execute([$matric_no, $course_code, '24/25', $lecturer_id_from_body]);
+
+        $response->getBody()->write(json_encode(['message' => 'Student enrolled successfully']));
+        return $response->withHeader('Content-Type', 'application/json');
+    } catch (Exception $e) {
+        $response->getBody()->write(json_encode(['message' => 'Error enrolling student', 'error' => $e->getMessage()]));
+        return $response->withStatus(500)->withHeader('Content-Type', 'application/json');
+    }
+})->add($jwtMiddleware);
 
 // CORS preflight support
 $app->options('/{routes:.+}', function ($request, $response, $args) {
