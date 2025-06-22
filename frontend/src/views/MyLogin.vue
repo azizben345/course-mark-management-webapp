@@ -2,7 +2,7 @@
   <div>
     <div class="login-container">
       <h2>Login</h2>
-      <form @submit.prevent="loginUser">
+      <form @submit.prevent="login"> <!-- Changed @submit.prevent="loginUser" to "login" -->
         <div>
           <label for="username">Username:</label>
           <input v-model="username" type="text" id="username" required />
@@ -13,7 +13,8 @@
           <input v-model="password" type="password" id="password" required />
         </div>
 
-        <button @click="login">Login</button>
+        <!-- The button should trigger the form's submit event -->
+        <button type="submit">Login</button>
 
       </form>
     </div>
@@ -35,9 +36,13 @@ export default {
   },
   methods: {
     async login() {
+        this.errorMessage = ''; // Clear previous errors
+        this.successMessage = ''; // Clear previous success messages
+
         try {
-            // Send POST request to /login for authentication
-            const res = await fetch('http://localhost:8000/login', {
+            // Send POST request to /api/login for authentication
+            // CORRECTED URL to match backend /api/login endpoint
+            const res = await fetch('http://localhost:8000/api/login', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -49,41 +54,43 @@ export default {
             const data = await res.json();
 
             if (res.ok && data.token) {
-                // Store JWT token in localStorage
-                localStorage.setItem('jwt', data.token);
-                localStorage.setItem('username', this.username);
+                // Login successful
+                this.successMessage = `Login successful! Welcome, ${data.user.username}.`;
 
-                // Fetch the user's role
-                const roleRes = await fetch('http://localhost:8000/me/role', {
-                    method: 'GET',
-                    headers: {
-                        'Authorization': `Bearer ${data.token}`
-                    }
-                });
+                // Store JWT token in localStorage under the 'jwt_token' key
+                localStorage.setItem('jwt_token', data.token);
 
-                const roleData = await roleRes.json();
+                // Store user info (id, username, role) in localStorage under 'user_info' key
+                localStorage.setItem('user_info', JSON.stringify(data.user)); // Store the user object
 
-                if (roleRes.ok && roleData.role) {
-                    // Store the role in localStorage
-                    localStorage.setItem('role', roleData.role);
+                // Redirect to dashboard based on role or a default dashboard
+                // CORRECTED REDIRECTION to use window.location.href for static HTML files
+                if (data.user.role === 'student') {
+                    setTimeout(() => {
+                        this.$router.push('/dashboard')
+                    }, 500); // Small delay for message visibility
                 } else {
-                    console.error('Failed to fetch user role');
+                    // Handle other roles or a general dashboard
+                    // For example, redirect to a generic dashboard.html or specific lecturer_dashboard.html
+                    // window.location.href = 'dashboard.html';
+                    this.successMessage = `Login successful for ${data.user.role}: ${data.user.username}. Redirecting...`;
+                    setTimeout(() => {
+                        this.$router.push('/dashboard'); 
+                    }, 500);
                 }
 
-                // Redirect to dashboard
-                this.$router.push('/dashboard');
             } else {
-                alert(data.error || 'Login failed');
+                // Login failed (e.g., 401 Unauthorized, 400 Bad Request)
+                this.errorMessage = data.error || 'Login failed. Please check your credentials.';
             }
         } catch (err) {
             console.error('Login error:', err);
-            alert('Login error. Please try again.');
+            this.errorMessage = 'Network error or unexpected issue. Please try again.';
         }
     }
   }
 };
 </script>
-
 
 <style scoped>
 .login-container {
@@ -93,6 +100,10 @@ export default {
 }
 .error {
   color: red;
+  margin-top: 10px;
+}
+.success {
+  color: green;
   margin-top: 10px;
 }
 </style>
