@@ -10,7 +10,16 @@ use InvalidArgumentException;
 
 class AdvisorService
 {
-    public function createAdvisorProfile(PDO $pdo, string $username, array $data): array {
+    public function createAdvisorProfile(PDO $pdo, string $username, array $data): array
+    {
+        $required = ['full_name', 'advisor_id', 'email', 'department', 'advisee_quota'];
+        foreach ($required as $field) {
+            if (empty($data[$field])) {
+                throw new InvalidArgumentException("Missing required advisor field: '$field'");
+            }
+        }
+
+
         $sql = "INSERT INTO advisors (user_id, full_name, advisor_id, email, department, advisee_quota, status)
                 VALUES (
                     (SELECT id FROM users WHERE username = :username),
@@ -30,6 +39,7 @@ class AdvisorService
             'email' => $data['email'],
             'department' => $data['department'],
             'advisee_quota' => $data['advisee_quota'],
+
             'status' => $data['status'] ?? 'active'
         ]);
 
@@ -39,6 +49,7 @@ class AdvisorService
             'email' => $data['email'],
             'department' => $data['department'],
             'advisee_quota' => $data['advisee_quota'],
+
             'status' => $data['status'] ?? 'active'
         ];
     }

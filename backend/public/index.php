@@ -30,6 +30,7 @@ use App\Services\LecturerService;
 use App\Services\AdvisorService;
 use App\Services\AdminService;
 
+
 // Removed: use Firebase\JWT\JWT; // Not needed directly in index.php now
 
 // Removed: use InvalidArgumentException; // These are global exceptions, no need for `use` statements
@@ -66,6 +67,7 @@ $app->post('/api/register', function (Request $request, Response $response) use 
         $advisorService = new AdvisorService();
         $adminService = new AdminService();
         $authController = new AuthController($database, $studentService, $lecturerService, $advisorService, $adminService, $secretKey);
+
 
         $result = $authController->register($registrationData); // Delegate to AuthController
 
@@ -108,6 +110,7 @@ $app->post('/api/login', function (Request $request, Response $response) use ($s
         $advisorService = new AdvisorService();
         $adminService = new AdminService();
         $authController = new AuthController($database, $studentService, $lecturerService, $advisorService, $adminService, $secretKey);
+
 
         $result = $authController->login($credentials); // Delegate to AuthController
 
