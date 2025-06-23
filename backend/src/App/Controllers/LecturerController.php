@@ -563,3 +563,4 @@ return function ($app, $jwtMiddleware) {
         }
     })->add($jwtMiddleware);
 };
+
