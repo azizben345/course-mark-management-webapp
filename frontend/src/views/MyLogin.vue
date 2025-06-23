@@ -89,9 +89,11 @@ export default {
           }
 
           // Redirect
+          console.log("Redirecting to dashboard...");
+          this.$router.push('/dashboard');
           this.$router.push('/dashboard');
         } else {
-          this.errorMessage = data.error || 'Login failed.';
+          this.errorMessage = data.error || 'Login failed.';}
 
 
       } catch (err) {
