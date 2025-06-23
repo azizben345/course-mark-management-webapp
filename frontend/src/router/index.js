@@ -17,6 +17,7 @@ import ManageComponent from '../views/Lecturer/ManageComponent.vue';
 import StudentAssessment from '../views/Student/StudentAssessment.vue';
 import PerformanceExpectation from '../views/Student/PerformanceExpectation.vue'; // Alias for student ranking
 import StudentRanking from '../views/Student/StudentRanking.vue';
+import StudentProgress from '../views/Student/StudentProgress.vue';
 
 // Advisor Views
 import StudentAdvisorList from '../views/Advisor/StudentAdvisorList.vue';
@@ -55,6 +56,7 @@ const routes = [
   { path: '/student/assessment', name: 'StudentAssessment', component: StudentAssessment, meta: { requiresAuth: true, role: 'student' } },
   { path: '/student/studentranking', component: StudentRanking, meta: { requiresAuth: true, role: 'student' } },
   { path: '/student/performance-expectation', component: PerformanceExpectation, meta: { requiresAuth: true, role: 'student' } },
+  { path: '/student/progress', name: 'StudentProgress', component: StudentProgress, meta: { requiresAuth: true, role: 'student' } }, 
 
   // Advisor Routes - Protected routes
   { path: '/advisor/student-advisor-list', component: StudentAdvisorList, meta: { requiresAuth: true, role: 'advisor' } },
