@@ -47,13 +47,15 @@ class AuthController{
             $newUserId = (int)$pdo->lastInsertId();
 
             // 2. Role-specific Profile Creation
-            $profileData = [];
             if ($role === 'student') {
                 $profileData = $this->studentService->createStudentProfile($pdo, $username, $registrationData);
             } elseif ($role === 'lecturer') {
+                // TODO: Implement lecturer profile creation
                 // $profileData = $this->lecturerService->createLecturerProfile($pdo, $username, $registrationData);
+            } elseif ($role === 'advisor') {
+                // TODO: Implement advisor profile creation
+                // $profileData = $this->advisorService->createAdvisorProfile($pdo, $username, $registrationData);
             }
-            // ... handle other roles
 
             $pdo->commit();
 
@@ -65,9 +67,11 @@ class AuthController{
                 'message' => 'User registered successfully.'
             ];
 
-        } catch (PDOException $e) { /* ... rollback and re-throw with context ... */ }
-          catch (InvalidArgumentException $e) { /* ... rollback and re-throw ... */ }
-          catch (\RuntimeException $e) { /* ... rollback and re-throw ... */ }
+        } catch (PDOException | InvalidArgumentException | RuntimeException $e) {
+            $pdo->rollBack();
+            throw new RuntimeException("Registration failed: " . $e->getMessage(), 500, $e);
+        }
+
     }
 
     public function login(array $credentials): array
@@ -89,13 +93,17 @@ class AuthController{
             $stmt->execute();
             $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
-            if (!$user) {
-                throw new \RuntimeException("Invalid username or password.", 401); // 401 Unauthorized
-            }
-
             // 2. Verify the password
-            if (!password_verify($password, $user['password'])) {
+            /*if (!password_verify($password, $user['password'])) {
                 throw new \RuntimeException("Invalid username or password.", 401); // 401 Unauthorized
+            }*/
+
+            if (!$user || !password_verify($password, $user['password'])) {
+                error_log("LOGIN FAILED: Password mismatch");
+                error_log("Entered password: " . $password);
+                error_log("Stored hash: " . $user['password']);
+                throw new RuntimeException("Invalid username or password.", 401);
+              
             }
 
             // 3. Generate JWT if authentication is successful

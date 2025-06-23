@@ -10,6 +10,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 }
 
 require __DIR__ . '/../vendor/autoload.php';
+//(require __DIR__ . '/../src/Controllers/LecturerController.php')($app, $jwtMiddleware); // link to controller for lecturer routes
 
 use Slim\Factory\AppFactory;
 use Psr\Http\Message\ServerRequestInterface as Request;
@@ -35,6 +36,7 @@ $jwtMiddleware = new JwtMiddleware($secretKey, $unprotectedRoutes);
 $app->addRoutingMiddleware();
 $errorMiddleware = $app->addErrorMiddleware(true, true, true);
 
+//(require __DIR__ . '/../src/App/Controllers/LecturerController.php')($app, $jwtMiddleware); // link to controller for lecturer routes
 
 // --- API Routes Definition ---
 
