@@ -161,6 +161,8 @@ export default {
         body.full_name = this.form.fullName;
         body.matric_no = this.form.matricNo;
         body.email = this.form.email;
+        body.year_of_study = this.form.yearOfStudy;
+        body.programme = this.form.programme;
       } else if (this.form.role === 'lecturer') {
         body.full_name = this.form.lecturerName;
         body.email = this.form.lecturerEmail;

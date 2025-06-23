@@ -43,7 +43,7 @@ export default {
     async login() {
       console.log("Login method triggered");
       try {
-        const res = await fetch('http://localhost:8000/login', {
+        const res = await fetch('http://localhost:8000/api/login', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -64,13 +64,18 @@ export default {
           localStorage.setItem('jwt', data.token);
 
           // Fetch user role
-          const roleRes = await fetch('http://localhost:8000/me/role', {
+          console.log('JWT token:', data.token);
+
+          const roleRes = await fetch('http://localhost:8000/api/me/role', {
             headers: {
               'Authorization': `Bearer ${data.token}`
             }
           });
 
+          console.log('Role response status:', roleRes.status);
           const roleData = await roleRes.json();
+          console.log('Role data:', roleData);
+          
           if (roleRes.ok && roleData.role) {
             localStorage.setItem('role', roleData.role);
           } else {
