@@ -2,7 +2,9 @@
   <div>
     <div class="login-container">
       <h2>Login</h2>
-      <form @submit.prevent="login"> <!-- ✅ fixed here -->
+
+      <form @submit.prevent="login"> 
+
         <div>
           <label for="username">Username:</label>
           <input v-model="username" type="text" id="username" required />
@@ -13,7 +15,10 @@
           <input v-model="password" type="password" id="password" required />
         </div>
 
-        <button type="submit">Login</button> <!-- ✅ cleaned this -->
+
+        <!-- The button should trigger the form's submit event -->
+        <button type="submit">Login</button>
+
 
         <p class="register-link">
           Don't have an account?
@@ -41,6 +46,7 @@ export default {
   },
   methods: {
     async login() {
+
       console.log("Login method triggered");
       try {
         const res = await fetch('http://localhost:8000/api/login', {
@@ -86,7 +92,7 @@ export default {
           this.$router.push('/dashboard');
         } else {
           this.errorMessage = data.error || 'Login failed.';
-        }
+
 
       } catch (err) {
         console.error('Login error:', err);
@@ -111,6 +117,7 @@ export default {
   color: green;
   margin-top: 10px;
 }
+
 .register-link {
   margin-top: 10px;
   text-align: center;
@@ -122,4 +129,5 @@ export default {
 .register-link a:hover {
   text-decoration: underline;
 }
+
 </style>

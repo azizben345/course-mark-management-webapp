@@ -7,6 +7,7 @@ namespace App\Services;
 use PDO;
 use PDOException;
 use InvalidArgumentException;
+
 use RuntimeException;
 
 class StudentService
@@ -15,6 +16,7 @@ class StudentService
     {
         // 1. Validate required fields
         $requiredFields = ['matric_no', 'full_name', 'email', 'year_of_study', 'programme'];
+
         foreach ($requiredFields as $field) {
             if (empty($studentData[$field])) {
                 throw new InvalidArgumentException("Missing required student profile field: '$field'.");

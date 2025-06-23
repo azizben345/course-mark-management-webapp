@@ -1,9 +1,9 @@
 {
-    "name": "user/bmiapp-api",
+    "name": "user/course-mark-management-api",
     "authors": [
         {
-            "name": "rizam",
-            "email": "rizam@utm.my"
+            "name": "aziz",
+            "email": "abdul-03@graduate.utm.my"
         }
     ],
     "require": {
@@ -13,7 +13,7 @@
     },
     "autoload": {
         "psr-4": {
-            "": "src/"
+            "App\\": "src/"
         }
     }
 }

@@ -1,4 +1,5 @@
 <template>
+
   <div class="register-container">
     <h2>Register</h2>
     <form @submit.prevent="register">
@@ -117,6 +118,7 @@
         <router-link to="/login">Login here</router-link>
       </p>
     </form>
+
   </div>
 </template>
 
@@ -125,6 +127,7 @@ export default {
   name: 'MyRegister',
   data() {
     return {
+
       successMessage: '',
       errorMessage: '',
       form: {
@@ -233,6 +236,7 @@ export default {
       } catch (err) {
         console.error('Registration error:', err);
         this.errorMessage = 'Network error. Please try again.';
+
       }
     }
   }
@@ -240,6 +244,7 @@ export default {
 </script>
 
 <style scoped>
+
 .register-container {
   max-width: 400px;
   margin: auto;

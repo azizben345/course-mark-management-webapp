@@ -71,6 +71,7 @@ class AuthController{
             $pdo->rollBack();
             throw new RuntimeException("Registration failed: " . $e->getMessage(), 500, $e);
         }
+
     }
 
     public function login(array $credentials): array
@@ -102,6 +103,7 @@ class AuthController{
                 error_log("Entered password: " . $password);
                 error_log("Stored hash: " . $user['password']);
                 throw new RuntimeException("Invalid username or password.", 401);
+              
             }
 
             // 3. Generate JWT if authentication is successful
