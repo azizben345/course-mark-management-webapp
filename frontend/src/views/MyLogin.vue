@@ -2,33 +2,28 @@
   <div>
     <div class="login-container">
       <h2>Login</h2>
-
       <form @submit.prevent="login">
         <div class="form-row">
           <label for="username">Username:</label>
           <input v-model="username" type="text" id="username" required />
         </div>
-
         <div class="form-row">
           <label for="password">Password:</label>
           <input v-model="password" type="password" id="password" required />
         </div>
-
+        <!-- The button should trigger the form's submit event -->
         <button type="submit">Login</button>
-
         <p class="register-link">
           Don't have an account?
           <router-link to="/register">Register here</router-link>
         </p>
       </form>
     </div>
-
-    <!-- Feedback messages will appear below the container -->
+    <!-- ✅ improved feedback display -->
     <p v-if="successMessage" class="success">{{ successMessage }}</p>
     <p v-if="errorMessage" class="error">{{ errorMessage }}</p>
   </div>
 </template>
-
 <script>
 export default {
   name: 'MyLogin',
@@ -42,10 +37,7 @@ export default {
   },
   methods: {
     async login() {
-      // Clear previous messages at the start of the login attempt
-      this.errorMessage = '';
-      this.successMessage = '';
-
+      console.log("Login method triggered");
       try {
         const res = await fetch('http://localhost:8000/api/login', {
           method: 'POST',
@@ -55,50 +47,48 @@ export default {
             password: this.password
           })
         });
-
         const data = await res.json();
         console.log('Login response:', data);
-
         if (res.ok && data.token) {
-          // Login successful
-          this.successMessage = `Login successful! Welcome, ${data.user.username}. Redirecting...`;
-
-          // Store JWT token using the consistent key 'jwt_token'
-          localStorage.setItem('jwt_token', data.token);
-
-          // Store user info (id, username, role) using the consistent key 'user_info'
-          localStorage.setItem('user_info', JSON.stringify(data.user));
-
-          console.log('JWT token stored:', data.token);
-          console.log('User info stored:', data.user);
-
-          // Redirect to dashboard
-          setTimeout(() => {
-            if (this.$router) { // Ensure router is available before pushing
-                this.$router.push('/dashboard');
-            } else {
-                // Fallback for direct HTML file navigation if router is not present
-                window.location.href = 'dashboard.html'; // Or student_dashboard.html based on role
+          // Clear messages
+          this.errorMessage = '';
+          this.successMessage = 'Login successful! Redirecting...';
+          // Store JWT token
+          localStorage.setItem('jwt', data.token);
+          // Fetch user role
+          console.log('JWT token:', data.token);
+          const roleRes = await fetch('http://localhost:8000/api/me/role', {
+            headers: {
+              'Authorization': `Bearer ${data.token}`
             }
-          }, 500); // Short delay for user to see success message
-
+          });
+          console.log('Role response status:', roleRes.status);
+          const roleData = await roleRes.json();
+          console.log('Role data:', roleData);
+          if (roleRes.ok && roleData.role) {
+            localStorage.setItem('role', roleData.role);
+          } else {
+            console.error('Failed to fetch user role');
+          }
+          // Redirect
+          console.log("Redirecting to dashboard...");
+          this.$router.push('/dashboard');
+          this.$router.push('/dashboard');
         } else {
-          // Login failed (e.g., 401 Unauthorized, 400 Bad Request)
-          this.errorMessage = data.error || 'Login failed. Please check your credentials.';
+          this.errorMessage = data.error || 'Login failed.';
         }
       } catch (err) {
         console.error('Login error:', err);
-        this.errorMessage = 'Network error. Could not connect to the server. Please try again.';
+        this.errorMessage = 'Login error. Please try again.';
       }
     }
   }
 };
 </script>
-
 <style scoped>
 /* Styles copied and adapted from MyRegister.vue for consistency */
 .login-container {
-  max-width: 400px; /* Adjusted to fit content better, can be same as register or slightly smaller */
+  max-width: 400px;
   margin: 20px auto;
   padding: 30px;
   border: 1px solid #ddd;
@@ -121,7 +111,7 @@ h2 {
 }
 
 .form-row label {
-  width: 120px; /* Adjusted label width slightly for login page */
+  width: 120px;
   margin-right: 15px;
   font-weight: bold;
   text-align: right;
@@ -140,7 +130,7 @@ h2 {
 button {
   width: 100%;
   padding: 12px;
-  background-color: #007bff; /* Blue for login button */
+  background-color: #007bff;
   color: white;
   border: none;
   border-radius: 5px;
@@ -186,3 +176,4 @@ button:hover {
   text-decoration: underline;
 }
 </style>
+

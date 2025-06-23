@@ -48,8 +48,6 @@ const routes = [
   { path: '/', component: MyLogin },
   { path: '/register', component: MyRegister},
 
-  { path: '/register', component: MyRegister },
-
   {
     path: '/login',
     name: 'Login',
