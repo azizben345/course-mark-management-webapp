@@ -112,6 +112,21 @@
             </div>
         </div>
 
+        <!-- Conditional Fields: Admin -->
+        <div v-if="form.role === 'admin'">
+          <h3>Admin Details</h3>
+          <div class="form-row">
+            <label for="adminName">Full Name:</label>
+            <input v-model="form.adminName" type="text" id="adminName" required />
+          </div>
+
+          <div class="form-row">
+            <label for="adminEmail">Email:</label>
+            <input v-model="form.adminEmail" type="email" id="adminEmail" required />
+          </div>
+        </div>
+
+
         <button type="submit">Register</button>
 
         <p class="success" v-if="successMessage">{{ successMessage }}</p>
@@ -154,7 +169,10 @@ export default {
         advisorStaffId: '',
         advisorEmail: '',
         advisorDepartment: '',
-        adviseeQuota:''
+        adviseeQuota:'',
+        // Admin fields
+        adminName: '',
+        adminEmail: ''
       }
     };
   },
@@ -181,6 +199,7 @@ export default {
         this.form.advisorDepartment = '';
         this.form.adviseeQuota = '';
       }
+      
     }
   },
   methods: {
@@ -238,6 +257,16 @@ export default {
         body.department = this.form.advisorDepartment;
         body.advisee_quota = parseInt(this.form.adviseeQuota); // Ensure it's an integer
       }
+
+      if (this.form.role === 'admin') {
+        if (!this.form.adminName || !this.form.adminEmail) {
+          this.errorMessage = "All admin details (Full Name and Email) are required.";
+          return;
+        }
+        body.full_name = this.form.adminName;
+        body.email = this.form.adminEmail;
+      }
+
       console.log("Submitting registration:", body);
       
       try {
@@ -294,7 +323,11 @@ export default {
             advisorStaffId: '',
             advisorEmail: '',
             advisorDepartment: '',
-            adviseeQuota:''
+            adviseeQuota:'',
+
+            //admin
+            adminName: '',
+            adminEmail: ''
         };
     }
   }
