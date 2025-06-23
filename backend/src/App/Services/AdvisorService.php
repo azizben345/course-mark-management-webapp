@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Services;
 
 use PDO;
-use RuntimeException;
+use PDOException;
 use InvalidArgumentException;
 
 class AdvisorService
@@ -18,6 +18,7 @@ class AdvisorService
                 throw new InvalidArgumentException("Missing required advisor field: '$field'");
             }
         }
+
 
         $sql = "INSERT INTO advisors (user_id, full_name, advisor_id, email, department, advisee_quota, status)
                 VALUES (
@@ -37,7 +38,8 @@ class AdvisorService
             'advisor_id' => $data['advisor_id'],
             'email' => $data['email'],
             'department' => $data['department'],
-            'advisee_quota' => (int) $data['advisee_quota'],
+            'advisee_quota' => $data['advisee_quota'],
+
             'status' => $data['status'] ?? 'active'
         ]);
 
@@ -46,7 +48,8 @@ class AdvisorService
             'full_name' => $data['full_name'],
             'email' => $data['email'],
             'department' => $data['department'],
-            'advisee_quota' => (int) $data['advisee_quota'],
+            'advisee_quota' => $data['advisee_quota'],
+
             'status' => $data['status'] ?? 'active'
         ];
     }

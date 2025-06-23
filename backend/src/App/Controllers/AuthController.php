@@ -8,6 +8,8 @@ use App\db;
 use App\Services\StudentService;
 use App\Services\LecturerService;
 use App\Services\AdvisorService;
+use App\Services\AdminService;
+
 use PDO;
 use PDOException;
 use InvalidArgumentException;
@@ -21,7 +23,9 @@ class AuthController{
         private db $database,
         private StudentService $studentService,
         private LecturerService $lecturerService,
-        private AdvisorService $advisorService, 
+        private AdvisorService $advisorService,
+        private AdminService $adminService, 
+
         string $jwtSecretKey
         ){
             $this->jwtSecretKey = $jwtSecretKey;
@@ -61,7 +65,10 @@ class AuthController{
                 $profileData = $this->lecturerService->createLecturerProfile($pdo, $username, $registrationData);
             } elseif ($role === 'advisor') {
                 $profileData = $this->advisorService->createAdvisorProfile($pdo, $username, $registrationData);
+            } else {
+                $profileData = null; 
             }
+
 
             $pdo->commit();
 
