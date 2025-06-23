@@ -25,6 +25,7 @@ use App\Controllers\AuthController;
 use App\Controllers\StudentController;
 use App\Services\StudentService;
 use App\Services\LecturerService;
+use App\Services\AdvisorService;
 
 // Removed: use Firebase\JWT\JWT; // Not needed directly in index.php now
 
@@ -59,7 +60,8 @@ $app->post('/api/register', function (Request $request, Response $response) use 
         $database = new db();
         $studentService = new StudentService();
         $lecturerService = new LecturerService();
-        $authController = new AuthController($database, $studentService, $lecturerService, $secretKey);
+        $advisorService = new AdvisorService();
+        $authController = new AuthController($database, $studentService, $lecturerService, $advisorService, $secretKey);
 
         $result = $authController->register($registrationData); // Delegate to AuthController
 
@@ -99,7 +101,8 @@ $app->post('/api/login', function (Request $request, Response $response) use ($s
         $database = new db();
         $studentService = new StudentService();
         $lecturerService = new LecturerService();
-        $authController = new AuthController($database, $studentService, $lecturerService, $secretKey);
+        $advisorService = new AdvisorService();
+        $authController = new AuthController($database, $studentService, $lecturerService, $advisorService, $secretKey);
 
         $result = $authController->login($credentials); // Delegate to AuthController
 
@@ -133,7 +136,8 @@ $app->group('/api', function (RouteCollectorProxy $group) use ($secretKey){
         $database = new db();
         $studentService = new StudentService();
         $lecturerService = new LecturerService();
-        $authController = new AuthController($database, $studentService, $lecturerService, $secretKey); // Pass secretKey here
+        $advisorService = new AdvisorService();
+        $authController = new AuthController($database, $studentService, $lecturerService, $advisorService, $secretKey);
 
         try {
             $result = $authController->logout();
