@@ -112,6 +112,21 @@
             </div>
         </div>
 
+        <!-- Conditional Fields: Admin -->
+        <div v-if="form.role === 'admin'">
+          <h3>Admin Details</h3>
+          <div class="form-row">
+            <label for="adminName">Full Name:</label>
+            <input v-model="form.adminName" type="text" id="adminName" required />
+          </div>
+
+          <div class="form-row">
+            <label for="adminEmail">Email:</label>
+            <input v-model="form.adminEmail" type="email" id="adminEmail" required />
+          </div>
+        </div>
+
+
         <button type="submit">Register</button>
 
         <p class="success" v-if="successMessage">{{ successMessage }}</p>
@@ -154,7 +169,10 @@ export default {
         advisorStaffId: '',
         advisorEmail: '',
         advisorDepartment: '',
-        adviseeQuota:''
+        adviseeQuota:'',
+        // Admin fields
+        adminName: '',
+        adminEmail: ''
       }
     };
   },
@@ -181,6 +199,7 @@ export default {
         this.form.advisorDepartment = '';
         this.form.adviseeQuota = '';
       }
+      
     }
   },
   methods: {
@@ -215,16 +234,19 @@ export default {
         body.email = this.form.email;
         body.year_of_study = parseInt(this.form.yearOfStudy); // Ensure it's an integer
         body.programme = this.form.programme;
-      } else if (this.form.role === 'lecturer') {
-        if (!this.form.lecturerName || !this.form.lecturerStaffId || !this.form.lecturerEmail || !this.form.lecturerDepartment) {
-            this.errorMessage = "All lecturer details (Full Name, Staff ID, Email, Department) are required.";
+      } if (this.form.role === 'lecturer') {
+          if (!this.form.lecturerName || !this.form.lecturerStaffId || !this.form.lecturerEmail || !this.form.lecturerDepartment) {
+            this.errorMessage = "All lecturer details are required.";
             return;
+          }
+
+          body.full_name = this.form.lecturerName;
+          body.email = this.form.lecturerEmail;
+          body.lecturer_id = this.form.lecturerStaffId;
+          body.department = this.form.lecturerDepartment;
+          body.status = 'active'; // ✅ Now it runs
         }
-        body.full_name = this.form.lecturerName;
-        body.email = this.form.lecturerEmail;
-        body.lecturer_id = this.form.lecturerStaffId; // Assuming staff_id maps to lecturer_id in DB
-        body.department = this.form.lecturerDepartment;
-      } else if (this.form.role === 'advisor') {
+      else if (this.form.role === 'advisor') {
         if (!this.form.advisorName || !this.form.advisorStaffId || !this.form.advisorEmail || !this.form.advisorDepartment || !this.form.adviseeQuota) {
             this.errorMessage = "All advisor details (Full Name, Staff ID, Email, Department, Advisee Quota) are required.";
             return;
@@ -236,6 +258,17 @@ export default {
         body.advisee_quota = parseInt(this.form.adviseeQuota); // Ensure it's an integer
       }
 
+      if (this.form.role === 'admin') {
+        if (!this.form.adminName || !this.form.adminEmail) {
+          this.errorMessage = "All admin details (Full Name and Email) are required.";
+          return;
+        }
+        body.full_name = this.form.adminName;
+        body.email = this.form.adminEmail;
+      }
+
+      console.log("Submitting registration:", body);
+      
       try {
         const res = await fetch('http://localhost:8000/api/register', {
           method: 'POST',
@@ -272,19 +305,29 @@ export default {
             confirmPassword: '',
             role: null, // Reset to null
             fullName: '',
+            
+            //student            
             matricNo: '',
             email: '',
             yearOfStudy: '',
             programme: '',
+
+            //lecturer
             lecturerName: '',
             lecturerStaffId: '',
             lecturerEmail: '',
             lecturerDepartment: '',
+
+            //advisor
             advisorName: '',
             advisorStaffId: '',
             advisorEmail: '',
             advisorDepartment: '',
-            adviseeQuota:''
+            adviseeQuota:'',
+
+            //admin
+            adminName: '',
+            adminEmail: ''
         };
     }
   }

@@ -10,6 +10,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 }
 
 require __DIR__ . '/../vendor/autoload.php';
+//require_once __DIR__ . '/../src/Middleware/JwtMiddleware.php';
 //(require __DIR__ . '/../src/Controllers/LecturerController.php')($app, $jwtMiddleware); // link to controller for lecturer routes
 
 use Slim\Factory\AppFactory;
@@ -22,7 +23,13 @@ use App\db;
 use App\Middleware\JwtMiddleware;
 use App\Controllers\AuthController;
 use App\Controllers\StudentController;
+//use App\Controllers\AdvisorController;
+//use App\Controllers\AdminController;
 use App\Services\StudentService;
+use App\Services\LecturerService;
+use App\Services\AdvisorService;
+use App\Services\AdminService;
+
 
 // Removed: use Firebase\JWT\JWT; // Not needed directly in index.php now
 
@@ -56,7 +63,11 @@ $app->post('/api/register', function (Request $request, Response $response) use 
 
         $database = new db();
         $studentService = new StudentService();
-        $authController = new AuthController($database, $studentService, $secretKey);
+        $lecturerService = new LecturerService();
+        $advisorService = new AdvisorService();
+        $adminService = new AdminService();
+        $authController = new AuthController($database, $studentService, $lecturerService, $advisorService, $adminService, $secretKey);
+
 
         $result = $authController->register($registrationData); // Delegate to AuthController
 
@@ -95,7 +106,11 @@ $app->post('/api/login', function (Request $request, Response $response) use ($s
 
         $database = new db();
         $studentService = new StudentService();
-        $authController = new AuthController($database, $studentService, $secretKey);
+        $lecturerService = new LecturerService();
+        $advisorService = new AdvisorService();
+        $adminService = new AdminService();
+        $authController = new AuthController($database, $studentService, $lecturerService, $advisorService, $adminService, $secretKey);
+
 
         $result = $authController->login($credentials); // Delegate to AuthController
 
@@ -128,7 +143,10 @@ $app->group('/api', function (RouteCollectorProxy $group) use ($secretKey){
     $group->post('/logout', function (Request $request, Response $response) use ($secretKey) { // Added use($secretKey) for AuthController
         $database = new db();
         $studentService = new StudentService();
-        $authController = new AuthController($database, $studentService, $secretKey); // Pass secretKey here
+        $lecturerService = new LecturerService();
+        $advisorService = new AdvisorService();
+        $adminService = new AdminService();
+        $authController = new AuthController($database, $studentService, $lecturerService, $advisorService, $adminService, $secretKey);
 
         try {
             $result = $authController->logout();

@@ -6,6 +6,10 @@ namespace App\Controllers;
 
 use App\db;
 use App\Services\StudentService;
+use App\Services\LecturerService;
+use App\Services\AdvisorService;
+use App\Services\AdminService;
+
 use PDO;
 use PDOException;
 use InvalidArgumentException;
@@ -15,9 +19,17 @@ use Firebase\JWT\JWT;
 class AuthController{
     private string $jwtSecretKey;
 
-    public function __construct(private db $database,private StudentService $studentService, string $jwtSecretKey){
-        $this->jwtSecretKey = $jwtSecretKey;
-    }
+    public function __construct(
+        private db $database,
+        private StudentService $studentService,
+        private LecturerService $lecturerService,
+        private AdvisorService $advisorService,
+        private AdminService $adminService, 
+
+        string $jwtSecretKey
+        ){
+            $this->jwtSecretKey = $jwtSecretKey;
+        }
 
     public function register(array $registrationData) {
         $pdo = $this->database->getPDO();
@@ -50,12 +62,13 @@ class AuthController{
             if ($role === 'student') {
                 $profileData = $this->studentService->createStudentProfile($pdo, $username, $registrationData);
             } elseif ($role === 'lecturer') {
-                // TODO: Implement lecturer profile creation
-                // $profileData = $this->lecturerService->createLecturerProfile($pdo, $username, $registrationData);
+                $profileData = $this->lecturerService->createLecturerProfile($pdo, $username, $registrationData);
             } elseif ($role === 'advisor') {
-                // TODO: Implement advisor profile creation
-                // $profileData = $this->advisorService->createAdvisorProfile($pdo, $username, $registrationData);
+                $profileData = $this->advisorService->createAdvisorProfile($pdo, $username, $registrationData);
+            } else {
+                $profileData = null; 
             }
+
 
             $pdo->commit();
 
