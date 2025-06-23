@@ -215,16 +215,19 @@ export default {
         body.email = this.form.email;
         body.year_of_study = parseInt(this.form.yearOfStudy); // Ensure it's an integer
         body.programme = this.form.programme;
-      } else if (this.form.role === 'lecturer') {
-        if (!this.form.lecturerName || !this.form.lecturerStaffId || !this.form.lecturerEmail || !this.form.lecturerDepartment) {
-            this.errorMessage = "All lecturer details (Full Name, Staff ID, Email, Department) are required.";
+      } if (this.form.role === 'lecturer') {
+          if (!this.form.lecturerName || !this.form.lecturerStaffId || !this.form.lecturerEmail || !this.form.lecturerDepartment) {
+            this.errorMessage = "All lecturer details are required.";
             return;
+          }
+
+          body.full_name = this.form.lecturerName;
+          body.email = this.form.lecturerEmail;
+          body.lecturer_id = this.form.lecturerStaffId;
+          body.department = this.form.lecturerDepartment;
+          body.status = 'active'; // ✅ Now it runs
         }
-        body.full_name = this.form.lecturerName;
-        body.email = this.form.lecturerEmail;
-        body.lecturer_id = this.form.lecturerStaffId; // Assuming staff_id maps to lecturer_id in DB
-        body.department = this.form.lecturerDepartment;
-      } else if (this.form.role === 'advisor') {
+      else if (this.form.role === 'advisor') {
         if (!this.form.advisorName || !this.form.advisorStaffId || !this.form.advisorEmail || !this.form.advisorDepartment || !this.form.adviseeQuota) {
             this.errorMessage = "All advisor details (Full Name, Staff ID, Email, Department, Advisee Quota) are required.";
             return;
@@ -235,7 +238,8 @@ export default {
         body.department = this.form.advisorDepartment;
         body.advisee_quota = parseInt(this.form.adviseeQuota); // Ensure it's an integer
       }
-
+      console.log("Submitting registration:", body);
+      
       try {
         const res = await fetch('http://localhost:8000/api/register', {
           method: 'POST',
@@ -272,14 +276,20 @@ export default {
             confirmPassword: '',
             role: null, // Reset to null
             fullName: '',
+            
+            //student            
             matricNo: '',
             email: '',
             yearOfStudy: '',
             programme: '',
+
+            //lecturer
             lecturerName: '',
             lecturerStaffId: '',
             lecturerEmail: '',
             lecturerDepartment: '',
+
+            //advisor
             advisorName: '',
             advisorStaffId: '',
             advisorEmail: '',
