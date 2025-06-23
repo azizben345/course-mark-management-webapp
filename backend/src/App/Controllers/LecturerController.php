@@ -3,6 +3,9 @@ namespace App\Controllers;
 
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
+use App\db;
+
+require_once __DIR__ . '/../utils/db.php';
 
 return function ($app, $jwtMiddleware) {
     // manage students route
@@ -10,7 +13,9 @@ return function ($app, $jwtMiddleware) {
         $lecturer_id = $args['lecturer_id'];  // get the lecturer_id from the URL
 
         // Fetch assessment components for the lecturer's courses
-        $pdo = getPDO();
+        $db = new db();      
+        $pdo = $db->getPDO(); 
+
 
         // Get all assessment components for this lecturer
         $stmt_assessments = $pdo->prepare("
@@ -125,7 +130,9 @@ return function ($app, $jwtMiddleware) {
 
     // create enrollment route
     $app->post('/enrollments', function (Request $request, Response $response) {
-        $pdo = getPDO();
+        $db = new db();      
+        $pdo = $db->getPDO(); 
+
         $data = json_decode($request->getBody()->getContents(), true);
         
         $student_matric_no = $data['student_matric_no'];
@@ -190,7 +197,9 @@ return function ($app, $jwtMiddleware) {
             return $response->withStatus(400)->withHeader('Content-Type', 'application/json');
         }
 
-        $pdo = getPDO();
+        $db = new db();      
+        $pdo = $db->getPDO(); 
+
         $stmt = $pdo->prepare("
             UPDATE enrollments
             SET final_exam_mark = :final_exam_mark
@@ -220,7 +229,8 @@ return function ($app, $jwtMiddleware) {
     $app->delete('/students/{enrollment_id}', function (Request $request, Response $response, $args) {
         $enrollment_id = $args['enrollment_id'];
 
-        $pdo = getPDO();
+        $db = new db();      
+        $pdo = $db->getPDO(); 
 
         // Delete the student from the enrollments table
         $stmt = $pdo->prepare("DELETE FROM enrollments WHERE enrollment_id = :enrollment_id");
@@ -235,7 +245,8 @@ return function ($app, $jwtMiddleware) {
     $app->get('/lecturer/{lecturer_id}/courses', function (Request $request, Response $response, $args) {
         $lecturer_id = $args['lecturer_id'];
 
-        $pdo = getPDO();
+        $db = new db();      
+        $pdo = $db->getPDO(); 
         $stmt = $pdo->prepare("
             SELECT c.course_code, c.course_name
             FROM courses c
@@ -252,7 +263,8 @@ return function ($app, $jwtMiddleware) {
 
     // route to get or fetch all assessment components based on the lecturer's courses
     $app->get('/lecturer/{lecturer_id}/get-assessment-components', function (Request $request, Response $response, $args) {
-        $pdo = getPDO();
+        $db = new db();      
+        $pdo = $db->getPDO(); 
         $stmt = $pdo->prepare("
             SELECT ac.component_id, ac.component_name, ac.max_mark, c.course_code, c.course_name,
                 (SELECT COUNT(*) FROM assessment_marks am WHERE am.component_id = ac.component_id) AS student_count
@@ -278,7 +290,8 @@ return function ($app, $jwtMiddleware) {
         $component_id = $args['component_id'];  // Get the specific component_id from the URL
 
         // Fetch the assessment component details for the specific component_id
-        $pdo = getPDO();
+        $db = new db();      
+        $pdo = $db->getPDO(); 
         $stmt = $pdo->prepare("
             SELECT ac.component_id, ac.component_name, ac.max_mark, ac.course_code, c.course_name, 
                 (SELECT COUNT(*) FROM assessment_marks am WHERE am.component_id = ac.component_id) AS student_count
@@ -307,7 +320,8 @@ return function ($app, $jwtMiddleware) {
         $lecturer_id = $args['lecturer_id'];  // Get lecturer_id from URL
         $component_id = $args['component_id'];  // Get component_id from URL
 
-        $pdo = getPDO();
+        $db = new db();      
+        $pdo = $db->getPDO(); 
 
         // Get component details
         $stmt_component = $pdo->prepare("
@@ -352,7 +366,8 @@ return function ($app, $jwtMiddleware) {
         $component_name = $data['component_name'];
         $max_mark = $data['max_mark'];
 
-        $pdo = getPDO();
+        $db = new db();      
+        $pdo = $db->getPDO(); 
         $stmt = $pdo->prepare("
             INSERT INTO assessment_components (course_code, lecturer_id, component_name, max_mark)
             VALUES (:course_code, :lecturer_id, :component_name, :max_mark)
@@ -376,7 +391,8 @@ return function ($app, $jwtMiddleware) {
         $data = json_decode($request->getBody()->getContents(), true);
         $mark_obtained = $data['mark_obtained'];
 
-        $pdo = getPDO();
+        $db = new db();      
+        $pdo = $db->getPDO(); 
         $stmt = $pdo->prepare("UPDATE assessment_marks SET mark_obtained = ? WHERE enrollment_id = ? AND component_id = ?");
         $stmt->execute([$mark_obtained, $enrollment_id, $component_id]);
 
@@ -388,7 +404,8 @@ return function ($app, $jwtMiddleware) {
         $component_id = $args['component_id'];
         $enrollment_id = $args['enrollment_id'];
         
-        $pdo = getPDO();
+        $db = new db();      
+        $pdo = $db->getPDO(); 
         $stmt = $pdo->prepare("SELECT 1 FROM assessment_marks WHERE enrollment_id = :enrollment_id AND component_id = :component_id LIMIT 1");
         $stmt->execute(['enrollment_id' => $enrollment_id, 'component_id' => $component_id]);
         $exists = $stmt->fetchColumn();
@@ -403,7 +420,8 @@ return function ($app, $jwtMiddleware) {
         $data = json_decode($request->getBody()->getContents(), true);
         $mark_obtained = $data['mark_obtained'];
 
-        $pdo = getPDO();
+        $db = new db();      
+        $pdo = $db->getPDO(); 
         $stmt = $pdo->prepare("INSERT INTO assessment_marks (enrollment_id, component_id, mark_obtained) VALUES (?, ?, ?)");
         $stmt->execute([$enrollment_id, $component_id, $mark_obtained]);
 
@@ -422,7 +440,8 @@ return function ($app, $jwtMiddleware) {
         $max_mark = $data['max_mark'];
 
         // Check if the component belongs to the lecturer
-        $pdo = getPDO();
+        $db = new db();      
+        $pdo = $db->getPDO(); 
         $stmt = $pdo->prepare("
             SELECT COUNT(*) FROM assessment_components
             WHERE component_id = :component_id AND lecturer_id = :lecturer_id
@@ -457,7 +476,8 @@ return function ($app, $jwtMiddleware) {
         $component_id = $args['component_id'];  // This should be the correct component_id
 
         // Check if the component belongs to the lecturer
-        $pdo = getPDO();
+        $db = new db();      
+        $pdo = $db->getPDO(); 
         $stmt = $pdo->prepare("
             SELECT COUNT(*) FROM assessment_components
             WHERE component_id = :component_id AND lecturer_id = :lecturer_id
@@ -485,7 +505,8 @@ return function ($app, $jwtMiddleware) {
         $lecturer_id = $args['lecturer_id'];
         $component_id = $args['component_id'];
 
-        $pdo = getPDO();
+        $db = new db();      
+        $pdo = $db->getPDO(); 
         $stmt = $pdo->prepare("DELETE FROM assessment_components WHERE component_id = :component_id AND lecturer_id = :lecturer_id");
         $stmt->execute(['component_id' => $component_id, 'lecturer_id' => $lecturer_id]);
 
@@ -495,7 +516,8 @@ return function ($app, $jwtMiddleware) {
 
     // GET ALL students
     $app->get('/students', function ($request, $response) {
-        $pdo = getPDO();
+        $db = new db();      
+        $pdo = $db->getPDO(); 
         $stmt = $pdo->query("SELECT * FROM STUDENTS");
         $products = $stmt->fetchAll();
 
@@ -507,7 +529,8 @@ return function ($app, $jwtMiddleware) {
     $app->get('/student-name/{matric_no}', function (Request $request, Response $response, $args) {
         $matric_no = $args['matric_no'];
 
-        $pdo = getPDO();
+        $db = new db();      
+        $pdo = $db->getPDO(); 
         $stmt = $pdo->prepare("SELECT student_name FROM students WHERE matric_no = :matric_no");
         $stmt->execute(['matric_no' => $matric_no]);
         $student = $stmt->fetch();
@@ -538,7 +561,8 @@ return function ($app, $jwtMiddleware) {
             return $response->withStatus(403)->withHeader('Content-Type', 'application/json');
         }
 
-        $pdo = getPDO();
+        $db = new db();      
+        $pdo = $db->getPDO(); 
 
         // Check if the student is already enrolled
         $stmt = $pdo->prepare("SELECT * FROM enrollments WHERE student_matric_no = ? AND course_code = ?");
@@ -557,7 +581,7 @@ return function ($app, $jwtMiddleware) {
 
             $response->getBody()->write(json_encode(['message' => 'Student enrolled successfully']));
             return $response->withHeader('Content-Type', 'application/json');
-        } catch (Exception $e) {
+        } catch (\Exception $e) {
             $response->getBody()->write(json_encode(['message' => 'Error enrolling student', 'error' => $e->getMessage()]));
             return $response->withStatus(500)->withHeader('Content-Type', 'application/json');
         }

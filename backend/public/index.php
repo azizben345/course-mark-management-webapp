@@ -36,6 +36,7 @@ $jwtMiddleware = new JwtMiddleware($secretKey, $unprotectedRoutes);
 $app->addRoutingMiddleware();
 $errorMiddleware = $app->addErrorMiddleware(true, true, true);
 
+//(require __DIR__ . '/../src/App/Controllers/LecturerController.php')($app, $jwtMiddleware); // link to controller for lecturer routes
 
 // --- API Routes Definition ---
 
