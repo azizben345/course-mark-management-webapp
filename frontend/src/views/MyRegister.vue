@@ -132,13 +132,26 @@ export default {
         password: '',
         confirmPassword: '',
         role: 'student',
+
+        //Student fields
         fullName: '',
         matricNo: '',
         email: '',
+        yearOfStudy: '',
+        programme: '',
+
+        //Lecturer fields
         lecturerName: '',
+        lecturerStaffId: '',
         lecturerEmail: '',
+        lecturerDepartment: '',
+
+        // Advisor fields
         advisorName: '',
-        advisorEmail: ''
+        advisorStaffId: '',
+        advisorEmail: '',
+        advisorDepartment: '',
+        adviseeQuota:''
       }
     };
   },
@@ -166,9 +179,14 @@ export default {
       } else if (this.form.role === 'lecturer') {
         body.full_name = this.form.lecturerName;
         body.email = this.form.lecturerEmail;
+        body.staff_id = this.form.lecturerStaffId;
+        body.department = this.form.lecturerDepartment;
       } else if (this.form.role === 'advisor') {
         body.full_name = this.form.advisorName;
         body.email = this.form.advisorEmail;
+        body.staff_id = this.form.advisorStaffId;
+        body.department = this.form.advisorDepartment;
+        body.advisee_quota = this.form.adviseeQuota;
       }
 
       try {
@@ -188,13 +206,26 @@ export default {
             password: '',
             confirmPassword: '',
             role: 'student',
+            
+            //Student fields
             fullName: '',
             matricNo: '',
             email: '',
+            yearOfStudy: '',
+            programme: '',
+
+            //Lecturer fields
             lecturerName: '',
+            lecturerStaffId: '',
             lecturerEmail: '',
+            lecturerDepartment: '',
+
+            // Advisor fields
             advisorName: '',
-            advisorEmail: ''
+            advisorStaffId: '',
+            advisorEmail: '',
+            advisorDepartment: '',
+            adviseeQuota:''
           };
         } else {
           this.errorMessage = data.error || 'Registration failed.';
