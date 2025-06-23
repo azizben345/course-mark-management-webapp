@@ -5,104 +5,120 @@ import { createRouter, createWebHashHistory } from 'vue-router';
 import MyDashboard from '../views/MyDashboard.vue';
 import MyRegister from '../views/MyRegister.vue';
 import MyLogin from '../views/MyLogin.vue';
-// import DashboardLecturer from '../views/DashboardLecturer.vue';
-// import DashboardStudent from '../views/DashboardStudent.vue';
-// import DashboardAdvisor from '../views/DashboardAdvisor.vue';
 
-// // Lecturer Views
+// Lecturer Views
 import ManageStudents from '../views/Lecturer/ManageStudents.vue';
 import AssessmentLecturerEntry from '../views/Lecturer/AssessmentLecturer.vue';
 import EditEnrollment from '../views/Lecturer/EditEnrollment.vue';
 import AssessmentEdit from '../views/Lecturer/EditComponent.vue';
 import ManageComponent from '../views/Lecturer/ManageComponent.vue';
-// import FinalExamEntry from '../views/FinalExamEntry.vue';
-// import Analytics from '../views/Analytics.vue';
-// import ExportCSV from '../views/ExportCSV.vue';
-// import Notification from '../views/Notification.vue';
 
-// // Student Views
+// Student Views
 import StudentAssessment from '../views/Student/StudentAssessment.vue';
 import PerformanceExpectation from '../views/Student/PerformanceExpectation.vue'; // Alias for student ranking
-// import ProgressViewer from '../views/ProgressViewer.vue';
-// import MarkComparison from '../views/MarkComparison.vue';
 import StudentRanking from '../views/Student/StudentRanking.vue';
-// import WhatIfSimulator from '../views/WhatIfSimulator.vue';
-// import RemarkRequest from '../views/RemarkRequest.vue';
 
-// // Advisor Views
+// Advisor Views
 import StudentAdvisorList from '../views/Advisor/StudentAdvisorList.vue';
 import MeetingRecord from '../views/Advisor/MeetingRecord.vue';
-// import AdviseeDetails from '../views/AdviseeDetails.vue';
-// import AtRiskHighlights from '../views/AtRiskHighlights.vue';
-// import AdvisorNotes from '../views/AdvisorNotes.vue';
-// import ExportConsultations from '../views/ExportConsultations.vue';
 
-// // Admin 
+// Admin
 import ManageUsers from '../views/Admin/ManageUsers.vue';
-// import ManageCourses from '../views/Admin/ManageCourses.vue';
-// import AdminPanel from '../views/AdminPanel.vue';
-
-// import NotFound from '../views/NotFound.vue';
 
 const routes = [
-  { path: '/', component: MyLogin },
-  { path: '/register', component: MyRegister},
+  // Authentication Routes
+  { path: '/', name: 'Login', component: MyLogin }, // Named the login route
+  { path: '/register', name: 'Register', component: MyRegister }, // Named the register route
 
+  // Dashboards - Protected route
   {
-    path: '/login',
-    name: 'Login',
-    component: MyLogin,
+    path: '/dashboard',
+    name: 'Dashboard',
+    component: MyDashboard,
+    meta: { requiresAuth: true } // Mark this route as requiring authentication
   },
 
-
-  // Dashboards
-  { path: '/dashboard', component: MyDashboard },
-  // { path: '/lecturer', component: DashboardLecturer },
-  // { path: '/lecturer', component: DashboardLecturer },
-  // { path: '/student', component: DashboardStudent },
-  // { path: '/advisor', component: DashboardAdvisor },
-
-  // // Lecturer Routes
-  { path: '/lecturer/manage-students', component: ManageStudents },
-  { path: '/lecturer/assessments', component: AssessmentLecturerEntry },
+  // Lecturer Routes - Protected routes
+  { path: '/lecturer/manage-students', component: ManageStudents, meta: { requiresAuth: true, role: 'lecturer' } },
+  { path: '/lecturer/assessments', component: AssessmentLecturerEntry, meta: { requiresAuth: true, role: 'lecturer' } },
   {
-    path: '/edit-enrollment/:enrollment_id', name: 'editEnrollment', component: EditEnrollment, props: true  // Pass the enrollment_id as a prop to the EditEnrollment component
+    path: '/edit-enrollment/:enrollment_id',
+    name: 'editEnrollment',
+    component: EditEnrollment,
+    props: true,
+    meta: { requiresAuth: true, role: 'lecturer' }
   },
-  { path: '/lecturer/edit-assessment/:component_id', component: AssessmentEdit, props: true },
-  { path: '/lecturer/manage-component/:component_id', component: ManageComponent },
-  // { path: '/lecturer/final-exam', component: FinalExamEntry },
-  // { path: '/lecturer/analytics', component: Analytics },
-  // { path: '/lecturer/export', component: ExportCSV },
-  // { path: '/lecturer/notify', component: Notification },
+  { path: '/lecturer/edit-assessment/:component_id', component: AssessmentEdit, props: true, meta: { requiresAuth: true, role: 'lecturer' } },
+  { path: '/lecturer/manage-component/:component_id', component: ManageComponent, meta: { requiresAuth: true, role: 'lecturer' } },
 
-  // // Student Routes
-  { path: '/student/assessment', component: StudentAssessment },
-  // { path: '/student/progress', component: ProgressViewer },
-  { path: '/student/studentranking', component: StudentRanking },
-  { path: '/student/performance-expectation', component: PerformanceExpectation }, // Alias for student ranking
-  // { path: '/student/what-if', component: WhatIfSimulator },
-  // { path: '/student/remark', component: RemarkRequest },
+  // Student Routes - Protected routes
+  { path: '/student/assessment', name: 'StudentAssessment', component: StudentAssessment, meta: { requiresAuth: true, role: 'student' } },
+  { path: '/student/studentranking', component: StudentRanking, meta: { requiresAuth: true, role: 'student' } },
+  { path: '/student/performance-expectation', component: PerformanceExpectation, meta: { requiresAuth: true, role: 'student' } },
 
-  // // Advisor Routes
-  { path: '/advisor/student-advisor-list', component: StudentAdvisorList },
-  { path: '/advisor/meeting-records', component: MeetingRecord },
-  // { path: '/advisor/details/:id', component: AdviseeDetails, props: true },
-  // { path: '/advisor/risk', component: AtRiskHighlights },
-  // { path: '/advisor/notes/:id', component: AdvisorNotes, props: true },
-  // { path: '/advisor/exports', component: ExportConsultations },
+  // Advisor Routes - Protected routes
+  { path: '/advisor/student-advisor-list', component: StudentAdvisorList, meta: { requiresAuth: true, role: 'advisor' } },
+  { path: '/advisor/meeting-records', component: MeetingRecord, meta: { requiresAuth: true, role: 'advisor' } },
 
-  // // Admin 
-  { path: '/admin/manage-users', component: ManageUsers },
-  // { path: '/admin/manage-courses', component: ManageCourses },
-  // { path: '/admin', component: AdminPanel },
+  // Admin Routes - Protected routes
+  { path: '/admin/manage-users', component: ManageUsers, meta: { requiresAuth: true, role: 'admin' } },
 
-  // // 404
+  // 404 Catch-all (uncomment when all routes are defined and tested)
   // { path: '/:pathMatch(.*)*', name: 'NotFound', component: NotFound }
 ];
 
 const router = createRouter({
-  history: createWebHashHistory(),
+  history: createWebHashHistory(), // Uses hash mode
   routes
+});
+
+// Navigation Guard: Protect routes that require authentication and handle role-based access
+router.beforeEach((to, from, next) => {
+  const isAuthenticated = localStorage.getItem('jwt_token'); // Check if token exists
+  const userInfoString = localStorage.getItem('user_info'); // Retrieve user_info string
+
+  let userRole = null;
+  if (userInfoString) {
+    try {
+      const userInfo = JSON.parse(userInfoString);
+      userRole = userInfo.role; // Extract role
+    } catch (e) {
+      console.error("Error parsing user_info from localStorage:", e);
+      // Clear storage if malformed, then redirect to login
+      localStorage.removeItem('jwt_token');
+      localStorage.removeItem('user_info');
+      return next({ name: 'Login' });
+    }
+  }
+
+  console.log(`Navigating to: ${to.path}, Requires Auth: ${to.meta.requiresAuth}, Is Authenticated: ${!!isAuthenticated}, User Role: ${userRole}`);
+
+  // Scenario 1: User is trying to access login/register while already authenticated
+  if ((to.name === 'Login' || to.name === 'Register') && isAuthenticated) {
+    console.log('Authenticated user trying to access login/register. Redirecting to dashboard.');
+    return next({ name: 'Dashboard' }); // Redirect to dashboard
+  }
+
+  // Scenario 2: User is trying to access a protected route
+  if (to.meta.requiresAuth) {
+    if (!isAuthenticated) {
+      console.log('Accessing protected route without authentication. Redirecting to login.');
+      return next({ name: 'Login' }); // Not authenticated, redirect to login
+    }
+
+    // Scenario 3: Check role if specified in meta
+    // Admin role can bypass specific role checks
+    if (to.meta.role && userRole !== to.meta.role && userRole !== 'admin') {
+      console.log(`Access Denied: User role "${userRole}" cannot access "${to.path}" (requires "${to.meta.role}").`);
+      // Optionally, redirect to a more appropriate dashboard or an access denied page
+      alert(`Access Denied: You do not have the required role (${to.meta.role}) to view this page.`);
+      return next({ name: 'Dashboard' }); // Redirect to dashboard or an access denied page
+    }
+  }
+
+  // If none of the above conditions met, allow navigation
+  console.log('Navigation allowed.');
+  next();
 });
 
 export default router;
