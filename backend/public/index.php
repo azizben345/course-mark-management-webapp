@@ -222,6 +222,7 @@ $app->group('/api', function (RouteCollectorProxy $group) use ($secretKey){
         }
     });
 
+
     $group->get('/users', function (Request $request, Response $response) {
     $database = new \App\db();
     $adminService = new \App\Services\AdminService($database); 
@@ -230,6 +231,214 @@ $app->group('/api', function (RouteCollectorProxy $group) use ($secretKey){
     $response->getBody()->write(json_encode($users));
     
     return $response->withStatus(200)->withHeader('Content-Type', 'application/json');
+
+    $group->get('/students/{userId}/enrollments', function (Request $request, Response $response, array $args) {
+        try {
+            $userId = (int)$args['userId'];
+            $database = new db();
+            $controller = new StudentController($database);
+
+            // IMPORTANT: Verify that the userId from the URL matches the logged-in user's ID from JWT
+            $jwtPayload = $request->getAttribute('jwt'); // JWT payload from middleware
+            $authenticatedUserId = $jwtPayload->data->id;
+            $authenticatedUserRole = $jwtPayload->data->role;
+
+            // Allow admin or the specific student to view enrollments
+            if ($authenticatedUserId !== $userId && $authenticatedUserRole !== 'admin' && $authenticatedUserRole !== 'lecturer') {
+                $errorBody = json_encode(['error' => 'Unauthorized: Cannot view enrollments for another user.']);
+                $response->getBody()->write($errorBody);
+                return $response->withStatus(403)->withHeader('Content-Type', 'application/json');
+            }
+
+            // Call the correct method to get enrollments
+            $enrollments = $controller->getStudentEnrollments($userId);
+
+            $response->getBody()->write(json_encode($enrollments));
+            return $response->withStatus(200)->withHeader('Content-Type', 'application/json');
+        } catch (\RuntimeException $e) {
+            $errorBody = json_encode(['error' => 'Failed to retrieve student enrollments: ' . $e->getMessage()]);
+            $response->getBody()->write($errorBody);
+            return $response->withStatus(500)->withHeader('Content-Type', 'application/json');
+        } catch (\Throwable $e) {
+            $errorBody = json_encode(['error' => 'An unexpected server error occurred: ' . $e->getMessage()]);
+            $response->getBody()->write($errorBody);
+            return $response->withStatus(500)->withHeader('Content-Type', 'application/json');
+        }
+    });
+
+    $group->get('/enrollments/{enrollmentId}/components-and-marks', function (Request $request, Response $response, array $args) {
+        try {
+            $enrollmentId = (int)$args['enrollmentId'];
+            $database = new db();
+            $controller = new StudentController($database);
+
+            // Get authenticated user info from JWT
+            $jwtPayload = $request->getAttribute('jwt');
+            $authenticatedUserId = $jwtPayload->data->id;
+            $authenticatedUserRole = $jwtPayload->data->role;
+
+            // Call the controller method, passing authenticated user details for internal authorization
+            $componentsAndMarks = $controller->getEnrollmentComponentsAndMarks(
+                $enrollmentId,
+                $authenticatedUserId,
+                $authenticatedUserRole
+            );
+
+            $response->getBody()->write(json_encode($componentsAndMarks));
+            return $response->withStatus(200)->withHeader('Content-Type', 'application/json');
+
+        } catch (\RuntimeException $e) {
+            // Catch RuntimeException thrown by the controller, using its specific code if available
+            $statusCode = $e->getCode() ?: 500; // Use the code from the exception, or default to 500
+            $errorBody = json_encode(['error' => $e->getMessage()]);
+            $response->getBody()->write($errorBody);
+            return $response->withStatus($statusCode)->withHeader('Content-Type', 'application/json');
+        } catch (\Throwable $e) {
+            // Catch any other unexpected errors
+            $errorBody = json_encode(['error' => 'An unexpected server error occurred: ' . $e->getMessage()]);
+            $response->getBody()->write($errorBody);
+            return $response->withStatus(500)->withHeader('Content-Type', 'application/json');
+        }
+    });
+
+    $group->get('/enrollments/{enrollmentId}/comparison', function (Request $request, Response $response, array $args) {
+        try {
+            $enrollmentId = (int)$args['enrollmentId'];
+            $database = new db();
+            $controller = new StudentController($database);
+
+            $jwtPayload = $request->getAttribute('jwt');
+            $authenticatedUserId = $jwtPayload->data->id;
+            $authenticatedUserRole = $jwtPayload->data->role;
+
+            $comparisonData = $controller->getEnrollmentComparisonData(
+                $enrollmentId,
+                $authenticatedUserId,
+                $authenticatedUserRole
+            );
+
+            $response->getBody()->write(json_encode($comparisonData));
+            return $response->withStatus(200)->withHeader('Content-Type', 'application/json');
+        } catch (\RuntimeException $e) {
+            $statusCode = $e->getCode() ?: 500;
+            $errorBody = json_encode(['error' => $e->getMessage()]);
+            $response->getBody()->write($errorBody);
+            return $response->withStatus($statusCode)->withHeader('Content-Type', 'application/json');
+        } catch (\Throwable $e) {
+            $errorBody = json_encode(['error' => 'An unexpected server error occurred: ' . $e->getMessage()]);
+            $response->getBody()->write($errorBody);
+            return $response->withStatus(500)->withHeader('Content-Type', 'application/json');
+        }
+    });
+
+    // NEW Route: GET /api/enrollments/{enrollmentId}/rank
+    $group->get('/enrollments/{enrollmentId}/rank', function (Request $request, Response $response, array $args) {
+        try {
+            $enrollmentId = (int)$args['enrollmentId'];
+            $database = new db();
+            $controller = new StudentController($database);
+
+            $jwtPayload = $request->getAttribute('jwt');
+            $authenticatedUserId = $jwtPayload->data->id;
+            $authenticatedUserRole = $jwtPayload->data->role;
+
+            $rankData = $controller->getStudentClassRank(
+                $enrollmentId,
+                $authenticatedUserId,
+                $authenticatedUserRole
+            );
+
+            $response->getBody()->write(json_encode($rankData));
+            return $response->withStatus(200)->withHeader('Content-Type', 'application/json');
+        } catch (\RuntimeException $e) {
+            $statusCode = $e->getCode() ?: 500;
+            $errorBody = json_encode(['error' => $e->getMessage()]);
+            $response->getBody()->write($errorBody);
+            return $response->withStatus($statusCode)->withHeader('Content-Type', 'application/json');
+        } catch (\Throwable $e) {
+            $errorBody = json_encode(['error' => 'An unexpected server error occurred: ' . $e->getMessage()]);
+            $response->getBody()->write($errorBody);
+            return $response->withStatus(500)->withHeader('Content-Type', 'application/json');
+        }
+    });
+
+    $group->get('/enrollments/{enrollmentId}/components-marks', function (Request $request, Response $response, array $args) {
+        try {
+            $enrollmentId = (int)$args['enrollmentId'];
+            $database = new db();
+            $controller = new StudentController($database);
+
+            $jwtPayload = $request->getAttribute('jwt');
+            $authenticatedUserId = $jwtPayload->data->id;
+            $authenticatedUserRole = $jwtPayload->data->role;
+
+            // This method already exists in StudentController.php and fetches components and marks.
+            $data = $controller->getEnrollmentComponentsAndMarks(
+                $enrollmentId,
+                $authenticatedUserId,
+                $authenticatedUserRole
+            );
+
+            $response->getBody()->write(json_encode($data));
+            return $response->withStatus(200)->withHeader('Content-Type', 'application/json');
+        } catch (\RuntimeException $e) {
+            $statusCode = $e->getCode() ?: 500;
+            $errorBody = json_encode(['error' => $e->getMessage()]);
+            $response->getBody()->write($errorBody);
+            return $response->withStatus($statusCode)->withHeader('Content-Type', 'application/json');
+        } catch (\Throwable $e) {
+            error_log("ERROR: Unexpected error in /enrollments/{enrollmentId}/components-marks: " . $e->getMessage());
+            $errorBody = json_encode(['error' => 'An unexpected server error occurred: ' . $e->getMessage()]);
+            $response->getBody()->write($errorBody);
+            return $response->withStatus(500)->withHeader('Content-Type', 'application/json');
+        }
+    });
+
+
+    $group->post('/enrollments/{enrollmentId}/performance-expectation', function (Request $request, Response $response, array $args) {
+        try {
+            $enrollmentId = (int)$args['enrollmentId'];
+            $requestBody = $request->getBody()->getContents();
+            $data = json_decode($requestBody, true);
+
+            if (json_last_error() !== JSON_ERROR_NONE || !is_array($data)) {
+                $errorBody = json_encode(['error' => 'Invalid JSON data provided.']);
+                $response->getBody()->write($errorBody);
+                return $response->withStatus(400)->withHeader('Content-Type', 'application/json');
+            }
+
+            $hypotheticalComponentMarks = $data['hypothetical_component_marks'] ?? [];
+            $hypotheticalFinalExamMark = $data['hypothetical_final_exam_mark'] ?? null;
+
+            $database = new db();
+            $controller = new StudentController($database);
+
+            $jwtPayload = $request->getAttribute('jwt');
+            $authenticatedUserId = $jwtPayload->data->id;
+            $authenticatedUserRole = $jwtPayload->data->role;
+
+            $projection = $controller->calculatePerformanceExpectationMarks(
+                $enrollmentId,
+                $hypotheticalComponentMarks,
+                $hypotheticalFinalExamMark,
+                $authenticatedUserId,
+                $authenticatedUserRole
+            );
+
+            $response->getBody()->write(json_encode($projection));
+            return $response->withStatus(200)->withHeader('Content-Type', 'application/json');
+        } catch (\RuntimeException $e) {
+            $statusCode = $e->getCode() ?: 500;
+            $errorBody = json_encode(['error' => $e->getMessage()]);
+            $response->getBody()->write($errorBody);
+            return $response->withStatus($statusCode)->withHeader('Content-Type', 'application/json');
+        } catch (\Throwable $e) {
+            error_log("ERROR: Unexpected error in /enrollments/{enrollmentId}/performance-expectation: " . $e->getMessage());
+            $errorBody = json_encode(['error' => 'An unexpected server error occurred: ' . $e->getMessage()]);
+            $response->getBody()->write($errorBody);
+            return $response->withStatus(500)->withHeader('Content-Type', 'application/json');
+        }
+
     });
 
 })->add($jwtMiddleware); // Apply the JWT middleware to this entire group

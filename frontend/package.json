@@ -9,6 +9,7 @@
   },
   "dependencies": {
     "bmi-app-gen": "file:",
+    "chart.js": "^4.5.0",
     "core-js": "^3.8.3",
     "vue": "^3.2.13",
     "vue-router": "^4.5.1"
@@ -23,20 +24,20 @@
     "eslint-plugin-vue": "^8.0.3"
   },
   "eslintConfig": {
-  "root": true,
-  "env": {
-    "node": true
+    "root": true,
+    "env": {
+      "node": true
+    },
+    "extends": [
+      "plugin:vue/vue3-essential",
+      "eslint:recommended"
+    ],
+    "parserOptions": {
+      "parser": "@babel/eslint-parser",
+      "requireConfigFile": false
+    },
+    "rules": {}
   },
-  "extends": [
-    "plugin:vue/vue3-essential",
-    "eslint:recommended"
-  ],
-  "parserOptions": {
-    "parser": "@babel/eslint-parser",
-    "requireConfigFile": false
-  },
-  "rules": {}
-},
   "browserslist": [
     "> 1%",
     "last 2 versions",
