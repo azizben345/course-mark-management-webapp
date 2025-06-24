@@ -65,7 +65,8 @@ $app->post('/api/register', function (Request $request, Response $response) use 
         $studentService = new StudentService();
         $lecturerService = new LecturerService();
         $advisorService = new AdvisorService();
-        $adminService = new AdminService();
+        $database = new db();
+        $adminService = new AdminService($database);
         $authController = new AuthController($database, $studentService, $lecturerService, $advisorService, $adminService, $secretKey);
 
 
@@ -108,7 +109,8 @@ $app->post('/api/login', function (Request $request, Response $response) use ($s
         $studentService = new StudentService();
         $lecturerService = new LecturerService();
         $advisorService = new AdvisorService();
-        $adminService = new AdminService();
+        $database = new db();
+        $adminService = new AdminService($database);
         $authController = new AuthController($database, $studentService, $lecturerService, $advisorService, $adminService, $secretKey);
 
 
@@ -145,7 +147,8 @@ $app->group('/api', function (RouteCollectorProxy $group) use ($secretKey){
         $studentService = new StudentService();
         $lecturerService = new LecturerService();
         $advisorService = new AdvisorService();
-        $adminService = new AdminService();
+        $database = new db();
+        $adminService = new AdminService($database);
         $authController = new AuthController($database, $studentService, $lecturerService, $advisorService, $adminService, $secretKey);
 
         try {
@@ -217,6 +220,16 @@ $app->group('/api', function (RouteCollectorProxy $group) use ($secretKey){
             $response->getBody()->write($errorBody);
             return $response->withStatus(500)->withHeader('Content-Type', 'application/json');
         }
+    });
+
+    $group->get('/users', function (Request $request, Response $response) {
+    $database = new \App\db();
+    $adminService = new \App\Services\AdminService($database); 
+    
+    $users = $adminService->getAllUsers();
+    $response->getBody()->write(json_encode($users));
+    
+    return $response->withStatus(200)->withHeader('Content-Type', 'application/json');
     });
 
 })->add($jwtMiddleware); // Apply the JWT middleware to this entire group
