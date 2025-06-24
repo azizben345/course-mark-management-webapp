@@ -38,7 +38,7 @@ export default {
           { name: 'Assessment', route: '/student/assessment' },
           { name: 'Compare Marks', route: '/student/compare-marks' }, 
           { name: 'Class Rank', route: '/student/class-rank' },    
-          { name: 'Student Performance Expectation', route: '/student/performance' },
+          { name: 'Performance Expectation', route: '/student/performance-expectation' },
           { name: 'Academic Progress', route: '/student/progress' }
         ],
         advisor: [

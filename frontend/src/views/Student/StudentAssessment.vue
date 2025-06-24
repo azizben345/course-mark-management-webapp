@@ -62,20 +62,15 @@
 </template>
 
 <script>
-//import NavBar from '../../components/NavBar.vue';
-
 export default {
   name: 'StudentAssessment',
-  // components: {
-  //   NavBar, // Register the AppHeaderNav component so it can be used in the template
-  // },
   data() {
     return {
       userId: null,
       token: null,
       enrollments: [],
       selectedEnrollment: null,
-      componentsAndMarks: [],
+      componentsAndMarks: [], // This will now store the array of components
       loadingCourses: true,
       loadingComponents: false,
       courseError: '',
@@ -84,9 +79,6 @@ export default {
   },
   computed: {
     calculatedTotalPercentage() {
-      // This calculates the total based on component marks fetched.
-      // IMPORTANT: This simple calculation assumes equal weighting or max_mark represents contribution.
-      // For true weighted totals, you need a 'weight' column in assessment_components.
       if (!this.componentsAndMarks || this.componentsAndMarks.length === 0) {
         return 0;
       }
@@ -123,6 +115,7 @@ export default {
       this.courseError = '';
       this.enrollments = [];
       const userInfoString = localStorage.getItem('user_info');
+      this.token = localStorage.getItem('jwt_token'); // Ensure token is set here
 
       if (!this.token || !userInfoString) {
         this.courseError = "Authentication data missing. Please log in again.";
@@ -186,7 +179,7 @@ export default {
     async fetchComponentsAndMarks(enrollmentId) {
       this.loadingComponents = true;
       this.componentError = '';
-      this.componentsAndMarks = [];
+      this.componentsAndMarks = []; // Clear previous components
 
       if (!this.token) {
         this.componentError = "Authentication token missing. Please log in again.";
@@ -194,7 +187,7 @@ export default {
         return;
       }
 
-      const API_ENDPOINT = `http://localhost:8000/api/enrollments/${enrollmentId}/components-and-marks`;
+      const API_ENDPOINT = `http://localhost:8000/api/enrollments/${enrollmentId}/components-marks`; // API endpoint from index.php
 
       try {
         const response = await fetch(API_ENDPOINT, {
@@ -206,14 +199,15 @@ export default {
         });
 
         if (response.ok) {
-          this.componentsAndMarks = await response.json();
+          const data = await response.json();
+          // FIX: Access the 'components' property from the returned object
+          this.componentsAndMarks = data.components || []; // Ensure it's an array, default to empty
         } else if (response.status === 401 || response.status === 403) {
           this.componentError = 'Session expired or unauthorized to view these marks.';
           this.redirectToLogin();
         } else if (response.status === 404) {
-             this.componentError = 'No assessment components found for this enrollment or enrollment not found.';
-        }
-        else {
+          this.componentError = 'No assessment components found for this enrollment or enrollment not found.';
+        } else {
           const errorResult = await response.json();
           this.componentError = `Failed to fetch components: ${errorResult.error || 'Unknown error'}`;
         }
@@ -231,7 +225,6 @@ export default {
     }
   },
   created() {
-    // Get token when component is created
     this.token = localStorage.getItem('jwt_token');
     if (!this.token) {
       this.redirectToLogin();

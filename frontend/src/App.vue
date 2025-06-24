@@ -42,7 +42,7 @@ export default {
           { name: 'Compare Marks', route: '/student/compare-marks' }, 
           { name: 'Class Rank', route: '/student/class-rank' },       
           { name: 'Personal Class Rank', route: '/class-rank' },
-          { name: 'Student Performance Expectation', route: '/performance' }
+          { name: 'Performance Expectation', route: '/student/performance-expectation' },
         ],
         advisor: [
           { name: 'Student-Advisor List', route: '/student-advisor-list' },
