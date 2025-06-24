@@ -15,9 +15,6 @@
         <div class="role">({{ formattedRole }})</div>
 
         <div class="actions">
-          <button @click="viewProfile">
-            👁️ View Profile
-          </button>
           <button @click="logout" class="logout">
             🔓 Logout
           </button>
@@ -54,8 +51,12 @@ export default {
       alert(`Name: ${this.user.name}\nEmail: ${this.user.email}`);
     },
     logout() {
-      alert('Logging out...');
-      
+      this.isOpen = false;
+      // Remove both jwt_token and user_info from localStorage
+      localStorage.removeItem('jwt_token');
+      localStorage.removeItem('user_info');
+      // Redirect to the login page (root path)
+      this.$router.push('/');
     }
   }
 }

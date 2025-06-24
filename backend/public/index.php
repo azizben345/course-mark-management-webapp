@@ -288,6 +288,67 @@ $app->group('/api', function (RouteCollectorProxy $group) use ($secretKey){
         }
     });
 
+    $group->get('/enrollments/{enrollmentId}/comparison', function (Request $request, Response $response, array $args) {
+        try {
+            $enrollmentId = (int)$args['enrollmentId'];
+            $database = new db();
+            $controller = new StudentController($database);
+
+            $jwtPayload = $request->getAttribute('jwt');
+            $authenticatedUserId = $jwtPayload->data->id;
+            $authenticatedUserRole = $jwtPayload->data->role;
+
+            $comparisonData = $controller->getEnrollmentComparisonData(
+                $enrollmentId,
+                $authenticatedUserId,
+                $authenticatedUserRole
+            );
+
+            $response->getBody()->write(json_encode($comparisonData));
+            return $response->withStatus(200)->withHeader('Content-Type', 'application/json');
+        } catch (\RuntimeException $e) {
+            $statusCode = $e->getCode() ?: 500;
+            $errorBody = json_encode(['error' => $e->getMessage()]);
+            $response->getBody()->write($errorBody);
+            return $response->withStatus($statusCode)->withHeader('Content-Type', 'application/json');
+        } catch (\Throwable $e) {
+            $errorBody = json_encode(['error' => 'An unexpected server error occurred: ' . $e->getMessage()]);
+            $response->getBody()->write($errorBody);
+            return $response->withStatus(500)->withHeader('Content-Type', 'application/json');
+        }
+    });
+
+    // NEW Route: GET /api/enrollments/{enrollmentId}/rank
+    $group->get('/enrollments/{enrollmentId}/rank', function (Request $request, Response $response, array $args) {
+        try {
+            $enrollmentId = (int)$args['enrollmentId'];
+            $database = new db();
+            $controller = new StudentController($database);
+
+            $jwtPayload = $request->getAttribute('jwt');
+            $authenticatedUserId = $jwtPayload->data->id;
+            $authenticatedUserRole = $jwtPayload->data->role;
+
+            $rankData = $controller->getStudentClassRank(
+                $enrollmentId,
+                $authenticatedUserId,
+                $authenticatedUserRole
+            );
+
+            $response->getBody()->write(json_encode($rankData));
+            return $response->withStatus(200)->withHeader('Content-Type', 'application/json');
+        } catch (\RuntimeException $e) {
+            $statusCode = $e->getCode() ?: 500;
+            $errorBody = json_encode(['error' => $e->getMessage()]);
+            $response->getBody()->write($errorBody);
+            return $response->withStatus($statusCode)->withHeader('Content-Type', 'application/json');
+        } catch (\Throwable $e) {
+            $errorBody = json_encode(['error' => 'An unexpected server error occurred: ' . $e->getMessage()]);
+            $response->getBody()->write($errorBody);
+            return $response->withStatus(500)->withHeader('Content-Type', 'application/json');
+        }
+    });
+
 })->add($jwtMiddleware); // Apply the JWT middleware to this entire group
 
 

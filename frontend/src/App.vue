@@ -39,7 +39,8 @@ export default {
         ],
         student: [
           { name: 'Assessment', route: '/assessment' },
-          { name: 'Compare Mark with Coursemates', route: '/compare-marks' },
+          { name: 'Compare Marks', route: '/student/compare-marks' }, 
+          { name: 'Class Rank', route: '/student/class-rank' },       
           { name: 'Personal Class Rank', route: '/class-rank' },
           { name: 'Student Performance Expectation', route: '/performance' }
         ],

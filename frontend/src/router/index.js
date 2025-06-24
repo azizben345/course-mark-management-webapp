@@ -15,9 +15,10 @@ import ManageComponent from '../views/Lecturer/ManageComponent.vue';
 
 // Student Views
 import StudentAssessment from '../views/Student/StudentAssessment.vue';
-import PerformanceExpectation from '../views/Student/PerformanceExpectation.vue'; // Alias for student ranking
-import StudentRanking from '../views/Student/StudentRanking.vue';
+//import PerformanceExpectation from '../views/Student/PerformanceExpectation.vue'; // Alias for student ranking
 import StudentProgress from '../views/Student/StudentProgress.vue';
+import StudentMarkComparison from '../views/Student/StudentMarkComparison.vue'; // NEW
+import StudentClassRank from '../views/Student/StudentClassRank.vue'; // NEW
 
 // Advisor Views
 import StudentAdvisorList from '../views/Advisor/StudentAdvisorList.vue';
@@ -54,9 +55,10 @@ const routes = [
 
   // Student Routes - Protected routes
   { path: '/student/assessment', name: 'StudentAssessment', component: StudentAssessment, meta: { requiresAuth: true, role: 'student' } },
-  { path: '/student/studentranking', component: StudentRanking, meta: { requiresAuth: true, role: 'student' } },
-  { path: '/student/performance-expectation', component: PerformanceExpectation, meta: { requiresAuth: true, role: 'student' } },
+  //{ path: '/student/performance-expectation', component: PerformanceExpectation, meta: { requiresAuth: true, role: 'student' } },
   { path: '/student/progress', name: 'StudentProgress', component: StudentProgress, meta: { requiresAuth: true, role: 'student' } }, 
+  { path: '/student/compare-marks', name: 'StudentCompareMarks', component: StudentMarkComparison, meta: { requiresAuth: true, role: 'student' }},
+  { path: '/student/class-rank', name: 'StudentClassRank', component: StudentClassRank,meta: { requiresAuth: true, role: 'student' }},
 
   // Advisor Routes - Protected routes
   { path: '/advisor/student-advisor-list', component: StudentAdvisorList, meta: { requiresAuth: true, role: 'advisor' } },
