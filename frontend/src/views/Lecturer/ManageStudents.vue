@@ -6,6 +6,8 @@
     <div v-for="course in courses" :key="course.course_code">
       <h3>{{ course.course_name }} ({{ course.course_code }})</h3>
 
+      <button @click="exportCourseToCSV(course)" style="margin-bottom: 8px;">Export to CSV</button>
+
       <table>
         <thead>
           <tr>
@@ -68,20 +70,20 @@ export default {
   name: 'ManageStudents',
   data() {
     return {
-      courses: []  // Array to store courses with students and assessments
+      courses: []  // array to store courses with students and assessments
     };
   },
   created() {
-    this.fetchStudents();  // Fetch students when the component is created
+    this.fetchStudents();  
   },
   methods: {
     async fetchStudents() {
-      const lecturerId = localStorage.getItem('username');  // Get the lecturer's username (which acts as lecturer_id)
+      const lecturerId = localStorage.getItem('username');  
       const jwt = localStorage.getItem('jwt');  
 
       if (!lecturerId || !jwt) {
         console.error("No user found in localStorage");
-        return;  // Exit if no lecturer_id is found
+        return;  
       }
 
       const response = await fetch(`http://localhost:8000/manage-students/${lecturerId}`, {
@@ -93,27 +95,26 @@ export default {
       });
       const data = await response.json();
 
-      this.courses = data.courses;  // Assign courses data to the courses array
+      this.courses = data.courses;  
     },
 
     getAssessmentMark(student, component_name) {
-      // Find the mark for the given assessment component for the student
+      
       const mark = student.marks.find(mark => mark.component_name === component_name);
-      return mark ? mark.mark_obtained : 'N/A';  // Return the mark or 'N/A' if not found
+      return mark ? mark.mark_obtained : 'N/A';  
     },
 
     editStudent(student) {
-      // Allow the lecturer to edit the final exam mark for the student
+      
       student.isEditingFinalExam = true;
-      student.newFinalExamMark = student.final_exam_mark;  // Pre-fill the input with current final exam mark
+      student.newFinalExamMark = student.final_exam_mark;  // pre-fill the input with current final exam mark
     },
 
     async saveStudent(student) {
-      // Update the final exam mark and recalculate the total
+      
       const finalExamMark = student.newFinalExamMark;
       const jwt = localStorage.getItem('jwt');  
 
-      // Make an API call to save the updated final exam mark
       const response = await fetch(`http://localhost:8000/students/${student.enrollment_id}`, {
         method: 'PUT',
         headers: {
@@ -128,9 +129,9 @@ export default {
       const data = await response.json();
       
       if (data.message) {
-        // If the update was successful, re-fetch the students to get updated data
+        
         await this.fetchStudents();
-        student.isEditingFinalExam = false; // Stop editing
+        student.isEditingFinalExam = false;
       } else {
         alert("Failed to update the final exam mark.");
       }
@@ -141,7 +142,7 @@ export default {
       return;
       }
       const jwt = localStorage.getItem('jwt');  
-      // Send DELETE request to the backend
+      
       const response = await fetch(`http://localhost:8000/students/${enrollment_id}`, {
       method: 'DELETE',
       headers: {
@@ -152,9 +153,48 @@ export default {
 
       if (data.message) {
       alert('Student deleted successfully');
-      this.fetchStudents();  // Refresh the student list
+      this.fetchStudents();  // refresh the student list
       }
     },
+
+    // Generate and download the CSV file for the selected course
+    exportCourseToCSV(course) {
+      const header = ['Matric No', 'Student Name'];
+      
+      course.components.forEach(assessment => {
+        header.push(`${assessment.component_name} (Max: ${assessment.max_mark})`);
+      });
+      header.push('Final Exam Mark', 'Total');
+
+      // array of data for each student in the course
+      const rows = course.students.map(student => {
+        const row = [
+          student.matric_no, 
+          student.student_name,
+          ...course.components.map(assessment => {
+            const mark = student.marks.find(mark => mark.component_name === assessment.component_name);
+            return mark ? mark.mark_obtained : 'N/A';  // If no mark, show 'N/A'
+          }),
+          student.final_exam_mark,
+          student.final_total
+        ];
+        return row;
+      });
+
+      // Convert the header and rows into CSV format
+      const csvContent = [
+        header.join(','),  // Convert header to a CSV string
+        ...rows.map(row => row.join(','))  // Convert rows to CSV string
+      ].join('\n');  // Join rows with newlines
+
+      // Create a Blob for the CSV content and generate a download link
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = `${course.course_name}_${course.course_code}_students.csv`; // File name
+      link.click();
+    },
+
   }
 };
 </script>
