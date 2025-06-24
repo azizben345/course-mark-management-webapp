@@ -6,10 +6,10 @@
       <label for="roleFilter">Filter by Role:</label>
       <select v-model="roleFilter" id="roleFilter">
         <option value="">All</option>
+        <option value="lecturer">Lecturer</option>
+        <option value="student">Student</option>
+        <option value="advisor">Advisor</option>
         <option value="admin">Admin</option>
-        <option value="personbmi">Person BMI</option>
-        <option value="nutritionist">Nutritionist</option>
-        <option value="fitness">Fitness Instructor</option>
       </select>
     </div>
 
@@ -44,13 +44,7 @@ export default {
   data() {
     return {
       roleFilter: '',
-      //for mock only, impl using fetch backend later
-      users: [
-        { name: 'Azman Musa', email: 'azman@bmiapp.com', role: 'personbmi' },
-        { name: 'Dr. Nisa', email: 'nisa@bmiapp.com', role: 'nutritionist' },
-        { name: 'Coach Rizal', email: 'rizal@bmiapp.com', role: 'fitness' },
-        { name: 'Admin Lisa', email: 'admin@bmiapp.com', role: 'admin' }
-      ]
+      users: [] // will be populated from backend
     };
   },
   computed: {
@@ -62,7 +56,14 @@ export default {
   },
   methods: {
     formatRole(role) {
-      return role === 'personbmi' ? 'Person BMI' : role.charAt(0).toUpperCase() + role.slice(1);
+      if (!role) return 'Unknown';
+      const map = {
+        admin: 'Admin',
+        advisor: 'Advisor',
+        lecturer: 'Lecturer',
+        student: 'Student'
+      };
+      return map[role] || role.charAt(0).toUpperCase() + role.slice(1);
     },
     viewUser(user) {
       alert(`Viewing:\n${user.name}\n${user.email}`);
@@ -75,9 +76,30 @@ export default {
         this.users = this.users.filter(u => u.email !== user.email);
       }
     }
+  },
+  
+  mounted() {
+  const token = localStorage.getItem('jwt_token');
+  console.log('Loaded JWT token:', token); // 👀 see if null
+
+  fetch('http://localhost:8000/api/users', {
+    headers: {
+      Authorization: 'Bearer ' + token
+    }
+  })
+    .then(res => res.json())
+    .then(data => {
+      console.log('Fetched users:', data); // 👀 confirm shape
+      this.users = data;
+    })
+    .catch(err => {
+      console.error('Failed to fetch users:', err);
+    });
   }
+
 };
 </script>
+
 
 <style scoped>
 .manage-users {
