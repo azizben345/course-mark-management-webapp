@@ -5,7 +5,7 @@ use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
 use App\db;
 
-require_once __DIR__ . '/../utils/db.php';
+// require_once __DIR__ . '/../utils/db.php';
 
 return function ($app, $jwtMiddleware) {
     // manage students route
