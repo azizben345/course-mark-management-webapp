@@ -2,9 +2,11 @@
 
 namespace App\Controllers;
 
+use App\db;
 use App\models\Advisor;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
+use Exception;
 
 class AdvisorController
 {
