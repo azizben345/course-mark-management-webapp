@@ -26,7 +26,7 @@
         <tr v-for="student in students" :key="student.enrollment_id">
           <td>{{ student.enrollment_id }}</td>
           <td>{{ student.student_matric_no }}</td>
-          <td>{{ student.student_name }}</td>
+          <td>{{ student.full_name }}</td>
           <td>
             <div v-if="student.editing">
               <input 
@@ -63,10 +63,10 @@
           @input="fetchStudentName"
         />
         
-        <label for="student_name">Student Name:</label>
+        <label for="full_name">Student Name:</label>
         <input 
           type="text" 
-          v-model="newEnrollment.student_name" 
+          v-model="newEnrollment.full_name" 
           readonly
         />
         
@@ -87,7 +87,7 @@ export default {
       students: [],
       newEnrollment: {
         matric_no: '',
-        student_name: ''
+        full_name: ''
       }
     };
   },
@@ -187,7 +187,7 @@ export default {
             },
             body: JSON.stringify({
                 matric_no: this.newEnrollment.matric_no,
-                student_name: this.newEnrollment.student_name,
+                full_name: this.newEnrollment.full_name,
                 course_code: this.component.course_code,  // Send course_code
                 lecturer_id: lecturerId                  // Send lecturer_id
             }),
@@ -209,7 +209,7 @@ export default {
         const response = await fetch(`http://localhost:8000/student-name/${matric_no}`);
         const data = await response.json();
         if (data && data.name) {
-          this.newEnrollment.student_name = data.name;
+          this.newEnrollment.full_name = data.name;
         }
       }
     }

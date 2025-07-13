@@ -10,123 +10,118 @@ use App\db;
 return function ($app, $jwtMiddleware) {
     // manage students route
     $app->get('/manage-students/{lecturer_id}', function (Request $request, Response $response, $args) {
-        $lecturer_id = $args['lecturer_id'];  // get the lecturer_id from the URL
+        $lecturer_id = $args['lecturer_id'];
 
-        // Fetch assessment components for the lecturer's courses
-        $db = new db();      
-        $pdo = $db->getPDO(); 
+        $db = new db();
+        $pdo = $db->getPDO();
 
-
-        // Get all assessment components for this lecturer
-        $stmt_assessments = $pdo->prepare("
-            SELECT 
-                ac.component_id, 
-                ac.component_name, 
-                ac.course_code,
-                ac.max_mark
-            FROM 
-                assessment_components ac
-            WHERE 
-                ac.lecturer_id = :lecturer_id
+        // Get all courses for this lecturer
+        $stmt_courses = $pdo->prepare("
+            SELECT course_code, course_name
+            FROM courses
+            WHERE lecturer_id = :lecturer_id
         ");
-        $stmt_assessments->execute(['lecturer_id' => $lecturer_id]);
-        $assessments = $stmt_assessments->fetchAll();
+        $stmt_courses->execute(['lecturer_id' => $lecturer_id]);
+        $coursesData = $stmt_courses->fetchAll();
 
-        // Fetch students and their marks for each assessment component
-        $stmt_students = $pdo->prepare("
-            SELECT 
-                e.course_code,
-                s.matric_no, 
-                s.student_name, 
-                e.enrollment_id, 
-                e.final_exam_mark, 
-                e.final_total,
-                e.total_ca
-            FROM 
-                enrollments e
-            JOIN 
-                students s ON e.student_matric_no = s.matric_no
-            WHERE 
-                e.lecturer_id = :lecturer_id
-        ");
-        $stmt_students->execute(['lecturer_id' => $lecturer_id]);
-        $students = $stmt_students->fetchAll();
-
-        // Organize assessments by course
         $courses = [];
-        foreach ($assessments as $assessment) {
-            if (!isset($courses[$assessment['course_code']])) {
-                $courses[$assessment['course_code']] = [
-                    'course_code' => $assessment['course_code'],
-                    'course_name' => $assessment['course_name'],
-                    'components' => [],
-                    'students' => []
-                ];
-            }
-
-            $courses[$assessment['course_code']]['components'][] = $assessment;
+        foreach ($coursesData as $course) {
+            $courses[$course['course_code']] = [
+                'course_code' => $course['course_code'],
+                'course_name' => $course['course_name'],
+                'components' => [],
+                'students' => []
+            ];
         }
 
-        // Add students to the relevant courses and calculate total_ca
-        foreach ($students as $student) {
-            $course_code = $student['course_code'];
-            if (isset($courses[$course_code])) {
-                $student['marks'] = [];
-                $total_ca = 0;  // Variable to accumulate continuous assessment marks
+        // Get all assessment components for these courses
+        if (!empty($courses)) {
+            $courseCodes = array_keys($courses);
+            $inQuery = implode(',', array_fill(0, count($courseCodes), '?'));
+            $stmt_assessments = $pdo->prepare("
+                SELECT component_id, component_name, course_code, max_mark
+                FROM assessment_components
+                WHERE course_code IN ($inQuery)
+            ");
+            $stmt_assessments->execute($courseCodes);
+            $assessments = $stmt_assessments->fetchAll();
 
-                foreach ($courses[$course_code]['components'] as $assessment) {
-                    $stmt_marks = $pdo->prepare("
-                        SELECT 
-                            am.mark_obtained
-                        FROM 
-                            assessment_marks am
-                        WHERE 
-                            am.enrollment_id = :enrollment_id AND am.component_id = :component_id
+            foreach ($assessments as $assessment) {
+                $courses[$assessment['course_code']]['components'][] = $assessment;
+            }
+
+            // Fetch students and their marks for each course
+            $stmt_students = $pdo->prepare("
+                SELECT 
+                    e.course_code,
+                    s.matric_no, 
+                    s.full_name, 
+                    e.enrollment_id, 
+                    e.final_exam_mark, 
+                    e.final_total,
+                    e.total_ca
+                FROM 
+                    enrollments e
+                JOIN 
+                    students s ON e.student_matric_no = s.matric_no
+                WHERE 
+                    e.course_code IN ($inQuery)
+            ");
+            $stmt_students->execute($courseCodes);
+            $students = $stmt_students->fetchAll();
+
+            foreach ($students as $student) {
+                $course_code = $student['course_code'];
+                if (isset($courses[$course_code])) {
+                    $student['marks'] = [];
+                    $total_ca = 0;
+
+                    foreach ($courses[$course_code]['components'] as $assessment) {
+                        $stmt_marks = $pdo->prepare("
+                            SELECT mark_obtained
+                            FROM assessment_marks
+                            WHERE enrollment_id = :enrollment_id AND component_id = :component_id
+                        ");
+                        $stmt_marks->execute([
+                            'enrollment_id' => $student['enrollment_id'],
+                            'component_id' => $assessment['component_id']
+                        ]);
+                        $mark = $stmt_marks->fetch();
+                        $mark_obtained = $mark ? $mark['mark_obtained'] : 0;
+                        $total_ca += $mark_obtained;
+                        $student['marks'][] = [
+                            'component_name' => $assessment['component_name'],
+                            'mark_obtained' => $mark_obtained
+                        ];
+                    }
+
+                    $final_exam_mark = $student['final_exam_mark'] ?: 0;
+                    $final_total = $total_ca + $final_exam_mark;
+
+                    // Update the total_ca and final_total in the enrollments table
+                    $stmt_update = $pdo->prepare("
+                        UPDATE enrollments
+                        SET total_ca = :total_ca, final_total = :final_total
+                        WHERE enrollment_id = :enrollment_id
                     ");
-                    $stmt_marks->execute([
-                        'enrollment_id' => $student['enrollment_id'],
-                        'component_id' => $assessment['component_id']
+                    $stmt_update->execute([
+                        'total_ca' => $total_ca,
+                        'final_total' => $final_total,
+                        'enrollment_id' => $student['enrollment_id']
                     ]);
-                    $mark = $stmt_marks->fetch();
 
-                    $mark_obtained = $mark ? $mark['mark_obtained'] : 0;  // Default to 0 if no mark found
-                    $total_ca += $mark_obtained;  // Accumulate marks for total_ca
-
-                    // Add the mark to the student's marks array
-                    $student['marks'][] = [
-                        'component_name' => $assessment['component_name'],
-                        'mark_obtained' => $mark_obtained
-                    ];
+                    $courses[$course_code]['students'][] = $student;
                 }
-
-                // Add the final exam mark to calculate final_total
-                $final_exam_mark = $student['final_exam_mark'] ?: 0;
-                $final_total = $total_ca + $final_exam_mark;
-
-                // Update the total_ca and final_total in the enrollments table
-                $stmt_update = $pdo->prepare("
-                    UPDATE enrollments
-                    SET total_ca = :total_ca, final_total = :final_total
-                    WHERE enrollment_id = :enrollment_id
-                ");
-                $stmt_update->execute([
-                    'total_ca' => $total_ca,
-                    'final_total' => $final_total,
-                    'enrollment_id' => $student['enrollment_id']
-                ]);
-
-                // Add the student to the correct course
-                $courses[$course_code]['students'][] = $student;
             }
         }
 
         // Return combined response with courses and students
         $response->getBody()->write(json_encode([
-            'courses' => array_values($courses)  // return courses grouped by course_code
+            'courses' => array_values($courses)
         ]));
 
         return $response->withHeader('Content-Type', 'application/json');
-    })->add($jwtMiddleware);
+    });//})->add($jwtMiddleware);
 
     // create enrollment route
     $app->post('/enrollments', function (Request $request, Response $response) {
@@ -337,7 +332,7 @@ return function ($app, $jwtMiddleware) {
             SELECT 
                 e.enrollment_id,
                 e.student_matric_no,
-                s.student_name,
+                s.full_name,
                 am.mark_id,
                 am.mark_obtained
             FROM enrollments e
@@ -531,12 +526,12 @@ return function ($app, $jwtMiddleware) {
 
         $db = new db();      
         $pdo = $db->getPDO(); 
-        $stmt = $pdo->prepare("SELECT student_name FROM students WHERE matric_no = :matric_no");
+        $stmt = $pdo->prepare("SELECT full_name FROM students WHERE matric_no = :matric_no");
         $stmt->execute(['matric_no' => $matric_no]);
         $student = $stmt->fetch();
 
         if ($student) {
-            $response->getBody()->write(json_encode(['name' => $student['student_name']]));
+            $response->getBody()->write(json_encode(['name' => $student['full_name']]));
         } else {
             $response->getBody()->write(json_encode(['error' => 'Student not found']));
         }
@@ -551,7 +546,7 @@ return function ($app, $jwtMiddleware) {
         $data = json_decode($request->getBody()->getContents(), true);
 
         $matric_no = $data['matric_no'];
-        $student_name = $data['student_name'];
+        $full_name = $data['full_name'];
         $course_code = $data['course_code']; // Get course_code from request body
         $lecturer_id_from_body = $data['lecturer_id']; // Get lecturer_id from request body
 

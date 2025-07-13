@@ -70,7 +70,7 @@ export default {
   },
   methods: {
     async fetchCourses() {
-      const lecturerId = 'LC001';//localStorage.getItem('username');  // Get the lecturer's username (which acts as lecturer_id)
+      const lecturerId = 'LC002';//localStorage.getItem('username');  // Get the lecturer's username (which acts as lecturer_id)
       const jwt = localStorage.getItem('jwt_token');  
 
       const response = await fetch(`http://localhost:8000/lecturer/${lecturerId}/get-assessment-components`, {
@@ -95,7 +95,7 @@ export default {
     async createAssessmentComponent(course_code) {
       // const userInfoString = localStorage.getItem('user_info');
       // const lecturerId = localStorage.getItem(userInfoString ? JSON.parse(userInfoString).username : ''); // Get the lecturer's username
-      const lecturerId = 'LC001';
+      const lecturerId = 'LC002';
       const jwt = localStorage.getItem('jwt_token');  
 
       const response = await fetch(`http://localhost:8000/lecturer/${lecturerId}/create-assessment-components`, {
@@ -163,7 +163,7 @@ export default {
     // Method for "Clear All" button
     async clearAllMarks(component) {
       const lecturerId = localStorage.getItem('username'); // get the lecturer's username (equals to lecturer_id)
-      const jwt = localStorage.getItem('jwt');  
+      const jwt = localStorage.getItem('jwt_token');  
 
       if (!lecturerId) {
         console.error("No lecturer username found in localStorage");

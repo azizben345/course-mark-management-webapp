@@ -24,7 +24,7 @@
         <tbody>
           <tr v-for="student in course.students" :key="student.matric_no">
             <td>{{ student.matric_no }}</td>
-            <td>{{ student.student_name }}</td>
+            <td>{{ student.full_name }}</td>
 
             <td v-for="assessment in course.components" :key="assessment.component_id">
               {{ getAssessmentMark(student, assessment.component_name) }}
@@ -78,13 +78,8 @@ export default {
   },
   methods: {
     async fetchStudents() {
-      const lecturerId = localStorage.getItem('username');  
-      const jwt = localStorage.getItem('jwt');  
-
-      if (!lecturerId || !jwt) {
-        console.error("No user found in localStorage");
-        return;  
-      }
+      const lecturerId = 'LC002';//(localStorage.getItem('user_info') || {}).username;  // Get the lecturer's username (which acts as lecturer_id)
+      const jwt = localStorage.getItem('jwt_token');
 
       const response = await fetch(`http://localhost:8000/manage-students/${lecturerId}`, {
         method: 'GET',
@@ -113,7 +108,7 @@ export default {
     async saveStudent(student) {
       
       const finalExamMark = student.newFinalExamMark;
-      const jwt = localStorage.getItem('jwt');  
+      const jwt = localStorage.getItem('jwt_token');  
 
       const response = await fetch(`http://localhost:8000/students/${student.enrollment_id}`, {
         method: 'PUT',
@@ -141,7 +136,7 @@ export default {
       if (!confirm('Are you sure you want to unenroll this student?')) {
       return;
       }
-      const jwt = localStorage.getItem('jwt');  
+      const jwt = localStorage.getItem('jwt_token');  
       
       const response = await fetch(`http://localhost:8000/students/${enrollment_id}`, {
       method: 'DELETE',
@@ -170,7 +165,7 @@ export default {
       const rows = course.students.map(student => {
         const row = [
           student.matric_no, 
-          student.student_name,
+          student.full_name,
           ...course.components.map(assessment => {
             const mark = student.marks.find(mark => mark.component_name === assessment.component_name);
             return mark ? mark.mark_obtained : 'N/A';  // If no mark, show 'N/A'

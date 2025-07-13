@@ -4,7 +4,7 @@
     <form @submit.prevent="updateStudent">
     <div>
       <label>Student Name:</label>
-      <span>{{ student.student_name }}</span>
+      <span>{{ student.full_name }}</span>
     </div>
       <div>
         <label for="final_exam_mark">Final Exam Mark:</label>
@@ -26,7 +26,7 @@ export default {
   data() {
     return {
       student: {
-        student_name: '',
+        full_name: '',
         final_exam_mark: '',
         final_total: '',
       }
