@@ -23,6 +23,7 @@ import PerformanceExpectation from '../views/Student/PerformanceExpectation.vue'
 // Advisor Views
 import StudentAdvisorList from '../views/Advisor/StudentAdvisorList.vue';
 import MeetingRecord from '../views/Advisor/MeetingRecord.vue';
+import ManageCourses from '../views/Advisor/ManageCourses.vue'; // NEW
 
 // Admin
 import ManageUsers from '../views/Admin/ManageUsers.vue';

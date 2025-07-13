@@ -43,7 +43,8 @@ export default {
         ],
         advisor: [
           { name: 'Student-Advisor List', route: '/advisor/student-advisor-list' },
-          { name: 'Meeting Records', route: '/advisor/meeting-records' }
+          { name: 'Meeting Records', route: '/advisor/meeting-records' },
+          { name: 'Manage Courses', route: '/advisor/manage-courses' },
         ],
         admin: [
           { name: 'Manage Users', route: '/admin/manage-users' },
