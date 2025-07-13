@@ -7,7 +7,7 @@
       <h3>{{ course.course_name }} ({{ course.course_code }})</h3>
 
       <!-- Table for each course -->
-      <table>
+      <table v-if="course.assessments && course.assessments.length">
         <thead>
           <tr>
             <th>No.</th>
@@ -38,6 +38,9 @@
           </tr>
         </tbody>
       </table>
+      <div v-else style="margin-bottom: 8px; color: #888;">
+        No assessment components yet.
+      </div>
 
       <!-- Form to add a new assessment component -->
       <div>
@@ -70,8 +73,17 @@ export default {
   },
   methods: {
     async fetchCourses() {
-      const lecturerId = 'LC002';//localStorage.getItem('username');  // Get the lecturer's username (which acts as lecturer_id)
+      const userInfo = JSON.parse(localStorage.getItem('user_info')).id;
       const jwt = localStorage.getItem('jwt_token');  
+      const lecturerIdResponse = await fetch(`http://localhost:8000/get-lecturer-id/${userInfo}`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${jwt}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      const lecturerData = await lecturerIdResponse.json();
+      const lecturerId = lecturerData.lecturer_id; 
 
       const response = await fetch(`http://localhost:8000/lecturer/${lecturerId}/get-assessment-components`, {
         method: 'GET',
@@ -82,21 +94,31 @@ export default {
       });
       const data = await response.json();
 
-      // Map and group assessments by course_code
-      const groupedCourses = Object.keys(data).map(courseCode => ({
-        course_code: courseCode,
-        course_name: data[courseCode][0].course_name,  // Use the first component's course_name as the course name
-        assessments: data[courseCode],
-      }));
+      // Map and group assessments by course_code, handle null/empty
+      const groupedCourses = Object.keys(data).map(courseCode => {
+        const assessments = Array.isArray(data[courseCode]) && data[courseCode] ? data[courseCode] : [];
+        return {
+          course_code: courseCode,
+          course_name: assessments.length > 0 && assessments[0].course_name ? assessments[0].course_name : 'Unknown Course',
+          assessments: assessments
+        };
+      });
 
       this.courses = groupedCourses;  // Assign grouped courses to the component
     },
 
     async createAssessmentComponent(course_code) {
-      // const userInfoString = localStorage.getItem('user_info');
-      // const lecturerId = localStorage.getItem(userInfoString ? JSON.parse(userInfoString).username : ''); // Get the lecturer's username
-      const lecturerId = 'LC002';
+      const userInfo = JSON.parse(localStorage.getItem('user_info')).id;
       const jwt = localStorage.getItem('jwt_token');  
+      const lecturerIdResponse = await fetch(`http://localhost:8000/get-lecturer-id/${userInfo}`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${jwt}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      const lecturerData = await lecturerIdResponse.json();
+      const lecturerId = lecturerData.lecturer_id;  
 
       const response = await fetch(`http://localhost:8000/lecturer/${lecturerId}/create-assessment-components`, {
         method: 'POST',
@@ -116,7 +138,7 @@ export default {
         alert('Assessment component created successfully');
         this.fetchCourses(); // Refresh the courses data
         this.newComponent.component_name = '';
-        this.newComponent.max_mark = null;``
+        this.newComponent.max_mark = null;
       }
     },
 
@@ -129,9 +151,7 @@ export default {
     },
 
     async deleteComponent(component_id) {
-      // Find the component by component_id to check student_count
-      let component = null;
-      const jwt = localStorage.getItem('jwt');  
+      let component = null;  
 
       for (const course of this.courses) {
       component = course.assessments.find(c => c.component_id === component_id);
@@ -146,7 +166,18 @@ export default {
       return;
       }
 
-      const lecturerId = localStorage.getItem('username');
+      const userInfo = JSON.parse(localStorage.getItem('user_info')).id;
+      const jwt = localStorage.getItem('jwt_token');  
+      const lecturerIdResponse = await fetch(`http://localhost:8000/get-lecturer-id/${userInfo}`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${jwt}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      const lecturerData = await lecturerIdResponse.json();
+      const lecturerId = lecturerData.lecturer_id;
+
       const response = await fetch(`http://localhost:8000/lecturer/${lecturerId}/delete-assessment-components/${component_id}`, {
         method: 'DELETE',
         headers: {
@@ -162,8 +193,17 @@ export default {
 
     // Method for "Clear All" button
     async clearAllMarks(component) {
-      const lecturerId = localStorage.getItem('username'); // get the lecturer's username (equals to lecturer_id)
+      const userInfo = JSON.parse(localStorage.getItem('user_info')).id;
       const jwt = localStorage.getItem('jwt_token');  
+      const lecturerIdResponse = await fetch(`http://localhost:8000/get-lecturer-id/${userInfo}`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${jwt}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      const lecturerData = await lecturerIdResponse.json();
+      const lecturerId = lecturerData.lecturer_id;  
 
       if (!lecturerId) {
         console.error("No lecturer username found in localStorage");

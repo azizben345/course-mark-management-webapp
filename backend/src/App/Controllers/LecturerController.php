@@ -8,6 +8,26 @@ use App\db;
 // require_once __DIR__ . '/../utils/db.php';
 
 return function ($app, $jwtMiddleware) {
+    // fetch lecturer_id by comparing lecturers.user_id to user_id from API URL
+    $app->get('/get-lecturer-id/{user_id}', function (Request $request, Response $response, $args) {
+        $user_id = $args['user_id'];
+
+        $db = new db();
+        $pdo = $db->getPDO();
+
+        $stmt = $pdo->prepare("SELECT lecturer_id FROM lecturers WHERE user_id = :user_id");
+        $stmt->execute(['user_id' => $user_id]);
+        $lecturer = $stmt->fetch();
+
+        if ($lecturer && isset($lecturer['lecturer_id'])) {
+            $response->getBody()->write(json_encode(['lecturer_id' => $lecturer['lecturer_id']]));
+        } else {
+            $response->getBody()->write(json_encode(['error' => 'Lecturer not found']));
+            return $response->withStatus(404)->withHeader('Content-Type', 'application/json');
+        }
+        return $response->withHeader('Content-Type', 'application/json');
+    })->add($jwtMiddleware);
+
     // manage students route
     $app->get('/manage-students/{lecturer_id}', function (Request $request, Response $response, $args) {
         $lecturer_id = $args['lecturer_id'];
@@ -121,7 +141,7 @@ return function ($app, $jwtMiddleware) {
         ]));
 
         return $response->withHeader('Content-Type', 'application/json');
-    });//})->add($jwtMiddleware);
+    })->add($jwtMiddleware);
 
     // create enrollment route
     $app->post('/enrollments', function (Request $request, Response $response) {
@@ -258,15 +278,17 @@ return function ($app, $jwtMiddleware) {
 
     // route to get or fetch all assessment components based on the lecturer's courses
     $app->get('/lecturer/{lecturer_id}/get-assessment-components', function (Request $request, Response $response, $args) {
-        $db = new db();      
-        $pdo = $db->getPDO(); 
+        $lecturer_id = $args['lecturer_id'];
+        $db = new db();
+        $pdo = $db->getPDO();
         $stmt = $pdo->prepare("
             SELECT ac.component_id, ac.component_name, ac.max_mark, c.course_code, c.course_name,
                 (SELECT COUNT(*) FROM assessment_marks am WHERE am.component_id = ac.component_id) AS student_count
             FROM assessment_components ac
             JOIN courses c ON ac.course_code = c.course_code
+            WHERE ac.lecturer_id = :lecturer_id
         ");
-        $stmt->execute();
+        $stmt->execute(['lecturer_id' => $lecturer_id]);
         $components = $stmt->fetchAll();
 
         // Group by course_code
@@ -277,7 +299,7 @@ return function ($app, $jwtMiddleware) {
 
         $response->getBody()->write(json_encode($groupedComponents));
         return $response->withHeader('Content-Type', 'application/json');
-    })->add($jwtMiddleware);
+    });//->add($jwtMiddleware);
 
     // route to get assessment components based on component_id
     $app->get('/lecturer/{lecturer_id}/get-assessment-component/{component_id}', function (Request $request, Response $response, $args) {
@@ -308,7 +330,7 @@ return function ($app, $jwtMiddleware) {
         }
 
         return $response->withHeader('Content-Type', 'application/json');
-    })->add($jwtMiddleware);
+    });//->add($jwtMiddleware);
 
     // route to get components for student component
     $app->get('/lecturer/{lecturer_id}/assessment-components/{component_id}', function (Request $request, Response $response, $args) {

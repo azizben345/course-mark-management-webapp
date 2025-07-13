@@ -78,8 +78,17 @@ export default {
   },
   methods: {
     async fetchStudents() {
-      const lecturerId = 'LC002';//(localStorage.getItem('user_info') || {}).username;  // Get the lecturer's username (which acts as lecturer_id)
-      const jwt = localStorage.getItem('jwt_token');
+      const userInfo = JSON.parse(localStorage.getItem('user_info')).id;
+      const jwt = localStorage.getItem('jwt_token');  
+      const lecturerIdResponse = await fetch(`http://localhost:8000/get-lecturer-id/${userInfo}`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${jwt}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      const lecturerData = await lecturerIdResponse.json();
+      const lecturerId = lecturerData.lecturer_id;
 
       const response = await fetch(`http://localhost:8000/manage-students/${lecturerId}`, {
         method: 'GET',
