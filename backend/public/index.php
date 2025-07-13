@@ -230,8 +230,8 @@ $app->group('/api', function (RouteCollectorProxy $group) use ($secretKey){
     $users = $adminService->getAllUsers();
     $response->getBody()->write(json_encode($users));
     
-    return $response->withStatus(200)->withHeader('Content-Type', 'application/json');
-
+    return $response->withStatus(200)->withHeader('Content-Type', 'application/json'); });
+    
     $group->get('/students/{userId}/enrollments', function (Request $request, Response $response, array $args) {
         try {
             $userId = (int)$args['userId'];
