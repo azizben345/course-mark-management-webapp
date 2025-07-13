@@ -48,6 +48,7 @@ export default {
         ],
         admin: [
           { name: 'Manage Users', route: '/admin/manage-users' },
+          { name: 'Create New Course', route: '/admin/create-course' },
         ]
       }
     };

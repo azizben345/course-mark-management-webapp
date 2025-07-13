@@ -27,6 +27,7 @@ import ManageCourses from '../views/Advisor/ManageCourses.vue'; // NEW
 
 // Admin
 import ManageUsers from '../views/Admin/ManageUsers.vue';
+import AddCourse from '../views/Admin/AddCourse.vue';
 
 const routes = [
   // Authentication Routes
@@ -68,7 +69,8 @@ const routes = [
 
   // Admin Routes - Protected routes
   { path: '/admin/manage-users', component: ManageUsers, meta: { requiresAuth: true, role: 'admin' } },
-
+  { path: '/admin/create-course', component: AddCourse, meta: { requiresAuth: true, role: 'admin' } }
+  
   // 404 Catch-all (uncomment when all routes are defined and tested)
   // { path: '/:pathMatch(.*)*', name: 'NotFound', component: NotFound }
 ];
