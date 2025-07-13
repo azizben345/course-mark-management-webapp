@@ -8,6 +8,20 @@ use App\db;
 // require_once __DIR__ . '/../utils/db.php';
 
 return function ($app, $jwtMiddleware) {
+
+    // ✅ Route to fetch all lecturers
+    $app->get('/api/lecturers', function (Request $request, Response $response) {
+        $db = new db();
+        $pdo = $db->getPDO();
+
+        $stmt = $pdo->query("SELECT lecturer_id, full_name FROM lecturers");
+        $lecturers = $stmt->fetchAll(\PDO::FETCH_ASSOC);
+
+        $response->getBody()->write(json_encode($lecturers));
+        return $response->withHeader('Content-Type', 'application/json');
+    });
+
+
     // fetch lecturer_id by comparing lecturers.user_id to user_id from API URL
     $app->get('/get-lecturer-id/{user_id}', function (Request $request, Response $response, $args) {
         $user_id = $args['user_id'];
