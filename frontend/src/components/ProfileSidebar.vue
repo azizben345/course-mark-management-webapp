@@ -20,6 +20,11 @@
             👤 View Profile
           </button>
           
+          <!-- Reset Password Button -->
+          <button @click="resetPassword" class="reset-password">
+            🔑 Reset Password
+          </button>
+
           <!-- Logout Button -->
           <button @click="logout" class="logout">
             🔓 Logout
@@ -76,6 +81,13 @@ export default {
     viewProfile() {
       this.$router.push('/profile');  // Navigate to the profile page
     },
+
+    // Reset Password Method: Trigger password reset functionality
+    resetPassword() {
+      // Directly navigate to the Reset Password page
+      this.$router.push('/reset-password');
+    },
+
     logout() {
       this.isOpen = false;
       // Remove both jwt_token and user_info from localStorage

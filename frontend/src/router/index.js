@@ -28,6 +28,7 @@ import MeetingRecord from '../views/Advisor/MeetingRecord.vue';
 // Admin
 import ManageUsers from '../views/Admin/ManageUsers.vue';
 import AddCourse from '../views/Admin/AddCourse.vue';
+import ResetPassword from '../views/Admin/ResetPassword.vue';
 
 const routes = [
   // Authentication Routes
@@ -75,8 +76,8 @@ const routes = [
 
   // Admin Routes - Protected routes
   { path: '/admin/manage-users', component: ManageUsers, meta: { requiresAuth: true, role: 'admin' } },
-  { path: '/admin/create-course', component: AddCourse, meta: { requiresAuth: true, role: 'admin' } }
-  
+  { path: '/admin/create-course', component: AddCourse, meta: { requiresAuth: true, role: 'admin' } },
+  { path: '/reset-password', name: 'ResetPassword', component: ResetPassword}
   // 404 Catch-all (uncomment when all routes are defined and tested)
   // { path: '/:pathMatch(.*)*', name: 'NotFound', component: NotFound }
 ];
