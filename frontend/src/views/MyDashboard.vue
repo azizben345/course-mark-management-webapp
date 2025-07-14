@@ -30,9 +30,7 @@ export default {
       menuItems: {
         lecturer: [
           { name: 'Manage Students', route: '/lecturer/manage-students' },
-          { name: 'Assessment Entry', route: '/lecturer/assessments' },
-          { name: 'Final Exam Entry', route: '/lecturer/final-exam' },
-          { name: 'Analytics', route: '/lecturer/analytics' }
+          { name: 'Manage Assessments', route: '/lecturer/assessments' }
         ],
         student: [
           { name: 'Assessment', route: '/student/assessment' },
