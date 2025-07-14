@@ -34,6 +34,24 @@ use App\Services\AdminService;
 $app = AppFactory::create();
 $app->addRoutingMiddleware();
 $errorMiddleware = $app->addErrorMiddleware(true, true, true);
+$errorMiddleware->setDefaultErrorHandler(function (Request $request, Throwable $exception) use ($app) {
+    $response = $app->getResponseFactory()->createResponse();
+    
+    // Log the error message and stack trace to a file for easier troubleshooting
+    error_log("ERROR: " . $exception->getMessage());
+    error_log("Stack Trace: " . $exception->getTraceAsString());
+
+    // Send the error message and stack trace to the client (for development only)
+    $errorDetails = [
+        'error' => 'Internal Server Error',
+        'message' => $exception->getMessage(),
+        'trace' => $exception->getTraceAsString()
+    ];
+
+    $response->getBody()->write(json_encode($errorDetails));
+    return $response->withStatus(500)->withHeader('Content-Type', 'application/json');
+});
+
 
 // --- JWT Setup ---
 $secretKey = "my-secret-key"; // Keep this secure in production (environment variable)
@@ -141,6 +159,13 @@ $app->post('/api/login', function (Request $request, Response $response) use ($s
         return $response->withStatus(500)->withHeader('Content-Type', 'application/json');
     }
 });
+
+// In your index.php, add the route to handle adding a course
+$app->post('/api/courses', function (Request $request, Response $response) use ($database) {
+    $courseController = new \App\Controllers\CourseController($database);
+    return $courseController->addCourse($request, $response);
+});
+
 
 // Group for protected API routes, applying JwtMiddleware to all routes within this group
 // The group's prefix is '/api'. Routes inside should NOT repeat '/api'.
