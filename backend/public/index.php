@@ -11,39 +11,63 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 
 require __DIR__ . '/../vendor/autoload.php';
 //require_once __DIR__ . '/../src/Middleware/JwtMiddleware.php';
-//(require __DIR__ . '/../src/Controllers/LecturerController.php')($app, $jwtMiddleware); // link to controller for lecturer routes
 
 use Slim\Factory\AppFactory;
 use Psr\Http\Message\ServerRequestInterface as Request;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Server\RequestHandlerInterface as RequestHandler;
 use Slim\Routing\RouteCollectorProxy; // Make sure this is imported
-
 use App\db;
 use App\Middleware\JwtMiddleware;
 use App\Controllers\AuthController;
 use App\Controllers\StudentController;
+//use App\Controllers\LecturerController;
 //use App\Controllers\AdvisorController;
 //use App\Controllers\AdminController;
+//use App\Controllers\CourseController;
 use App\Services\StudentService;
 use App\Services\LecturerService;
 use App\Services\AdvisorService;
 use App\Services\AdminService;
 
-
-// Removed: use Firebase\JWT\JWT; // Not needed directly in index.php now
-
-// Removed: use InvalidArgumentException; // These are global exceptions, no need for `use` statements
-// Removed: use RuntimeException;         // to suppress warnings if referenced without namespace
-
+// --- Slim App & Middleware Setup ---
 $app = AppFactory::create();
+$app->addRoutingMiddleware();
+$errorMiddleware = $app->addErrorMiddleware(true, true, true);
+$errorMiddleware->setDefaultErrorHandler(function (Request $request, Throwable $exception) use ($app) {
+    $response = $app->getResponseFactory()->createResponse();
+    
+    // Log the error message and stack trace to a file for easier troubleshooting
+    error_log("ERROR: " . $exception->getMessage());
+    error_log("Stack Trace: " . $exception->getTraceAsString());
+
+    // Send the error message and stack trace to the client (for development only)
+    $errorDetails = [
+        'error' => 'Internal Server Error',
+        'message' => $exception->getMessage(),
+        'trace' => $exception->getTraceAsString()
+    ];
+
+    $response->getBody()->write(json_encode($errorDetails));
+    return $response->withStatus(500)->withHeader('Content-Type', 'application/json');
+});
+
+
+// --- JWT Setup ---
 $secretKey = "my-secret-key"; // Keep this secure in production (environment variable)
 $unprotectedRoutes = ['/api/register', '/api/login'];
 $jwtMiddleware = new JwtMiddleware($secretKey, $unprotectedRoutes);
-$app->addRoutingMiddleware();
-$errorMiddleware = $app->addErrorMiddleware(true, true, true);
 
+// --- DB & Controllers Setup ---
+$database = new db();
+$pdo = $database->getPDO();
 
+// --- Class-based controller ---
+//$courseController = new CourseController($database);
+//$lecturerController = new LecturerController($data, $jwtMiddleware);
+//$app->post('/api/courses', [$courseController, 'addCourse']);
+
+//(require __DIR__ . '/../src/App/Controllers/LecturerController.php')($app, $jwtMiddleware);
 
 // --- API Routes Definition ---
 
@@ -51,6 +75,8 @@ $errorMiddleware = $app->addErrorMiddleware(true, true, true);
 // These routes do NOT have JWT middleware applied directly.
 
 // POST /api/register - Handles user and student profile creation
+//$app->get('/api/lecturers', [$lecturerController, 'getLecturers']);
+
 $app->post('/api/register', function (Request $request, Response $response) use ($secretKey) {
     try {
         $registrationData = json_decode($request->getBody()->getContents(), true);
@@ -68,7 +94,6 @@ $app->post('/api/register', function (Request $request, Response $response) use 
         $database = new db();
         $adminService = new AdminService($database);
         $authController = new AuthController($database, $studentService, $lecturerService, $advisorService, $adminService, $secretKey);
-
 
         $result = $authController->register($registrationData); // Delegate to AuthController
 
@@ -133,6 +158,12 @@ $app->post('/api/login', function (Request $request, Response $response) use ($s
         $response->getBody()->write($errorBody);
         return $response->withStatus(500)->withHeader('Content-Type', 'application/json');
     }
+});
+
+// In your index.php, add the route to handle adding a course
+$app->post('/api/courses', function (Request $request, Response $response) use ($database) {
+    $courseController = new \App\Controllers\CourseController($database);
+    return $courseController->addCourse($request, $response);
 });
 
 
