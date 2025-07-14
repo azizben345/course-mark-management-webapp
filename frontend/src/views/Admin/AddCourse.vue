@@ -32,24 +32,21 @@ export default {
     };
   },
   created() {
-    // Fetch lecturers on load
-    axios.get('http://localhost:8000/api/lecturers').then(res => {
-      this.lecturers = res.data;
-    })
-    .catch(err => {
-      alert('Failed to load lecturers: ' + err.message);
-    });
+    // Fetch lecturers on page load
+    axios.get('http://localhost:8000/api/lecturers')
+      .then(res => {
+        this.lecturers = res.data;
+      })
+      .catch(err => {
+        alert('Failed to load lecturers: ' + err.message);
+      });
   },
   methods: {
     submitCourse() {
       axios.post('http://localhost:8000/api/courses', this.course)
         .then(() => {
           alert('✅ Course added!');
-          this.course = {
-            course_code: '',
-            course_name: '',
-            lecturer_id: ''
-          };
+          this.course = { course_code: '', course_name: '', lecturer_id: '' };
         })
         .catch(err => {
           alert('❌ Error: ' + (err.response?.data?.error || err.message));
@@ -75,4 +72,3 @@ export default {
   border-radius: 4px;
 }
 </style>
-

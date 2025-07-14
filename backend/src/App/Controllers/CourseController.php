@@ -1,43 +1,45 @@
 <?php
 namespace App\Controllers;
-use PDOException;
+
+use App\db;
+use Psr\Http\Message\RequestInterface as Request;
+use Psr\Http\Message\ResponseInterface as Response;
 
 class CourseController {
-    protected $db;
+    private $database;
 
-    public function __construct($db) {
-        $this->db = $db->getPDO(); // ✅ Ensure it's a PDO object
+    public function __construct($database) {
+        $this->database = $database;
     }
 
-    public function addCourse($request, $response, $args) {
-        $data = $request->getParsedBody();
-        error_log("DATA: " . json_encode($data)); 
+    public function addCourse(Request $request, Response $response) {
+        $data = json_decode($request->getBody()->getContents(), true);
 
-        $sql = "INSERT INTO courses (course_code, course_name, lecturer_id)
-                VALUES (:course_code, :course_name, :lecturer_id)";
+        // Ensure the necessary data exists
+        if (!isset($data['course_code'], $data['course_name'], $data['lecturer_id'])) {
+            $response->getBody()->write(json_encode(['error' => 'Missing required fields']));
+            return $response->withStatus(400)->withHeader('Content-Type', 'application/json');
+        }
 
-        error_log("SQL: " . $sql);
-        
-        try {
-            $stmt = $this->db->prepare($sql);
-            $stmt->bindParam(':course_code', $data['course_code']);
-            $stmt->bindParam(':course_name', $data['course_name']);
-            $stmt->bindParam(':lecturer_id', $data['lecturer_id']);
+        // Get the PDO instance from the database object
+        $pdo = $this->database->getPDO();  // Correctly get PDO instance
 
-            $stmt->execute();
+        // Prepare SQL query
+        $query = "INSERT INTO courses (course_code, course_name, lecturer_id) VALUES (:course_code, :course_name, :lecturer_id)";
+        $stmt = $pdo->prepare($query);  // Prepare the query on the PDO instance
 
+        // Bind parameters
+        $stmt->bindParam(':course_code', $data['course_code']);
+        $stmt->bindParam(':course_name', $data['course_name']);
+        $stmt->bindParam(':lecturer_id', $data['lecturer_id']);
+
+        // Execute the query and handle the response
+        if ($stmt->execute()) {
             $response->getBody()->write(json_encode(['message' => 'Course added successfully']));
-            return $response->withHeader('Content-Type', 'application/json')->withStatus(201);
-        } catch (PDOException $e) {
-            error_log('Add Course Error: ' . $e->getMessage()); // Log to PHP error log
-            error_log('Submitted data: ' . print_r($data, true)); // Log the submitted data
-
-             $response->getBody()->write(json_encode([
-              'error' => $e->getMessage(),
-              'debug' => $data
-            ]));
-            return $response->withHeader('Content-Type', 'application/json')->withStatus(500);
-
+            return $response->withStatus(201)->withHeader('Content-Type', 'application/json');
+        } else {
+            $response->getBody()->write(json_encode(['error' => 'Failed to add course']));
+            return $response->withStatus(500)->withHeader('Content-Type', 'application/json');
         }
     }
 }
