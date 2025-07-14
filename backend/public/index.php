@@ -21,10 +21,10 @@ use App\db;
 use App\Middleware\JwtMiddleware;
 use App\Controllers\AuthController;
 use App\Controllers\StudentController;
-use App\Controllers\LecturerController;
+//use App\Controllers\LecturerController;
 //use App\Controllers\AdvisorController;
 //use App\Controllers\AdminController;
-use App\Controllers\CourseController;
+//use App\Controllers\CourseController;
 use App\Services\StudentService;
 use App\Services\LecturerService;
 use App\Services\AdvisorService;
@@ -45,9 +45,9 @@ $database = new db();
 $pdo = $database->getPDO();
 
 // --- Class-based controller ---
-$courseController = new CourseController($database);
-$lecturerController = new LecturerController($data, $jwtMiddleware);
-$app->post('/api/courses', [$courseController, 'addCourse']);
+//$courseController = new CourseController($database);
+//$lecturerController = new LecturerController($data, $jwtMiddleware);
+//$app->post('/api/courses', [$courseController, 'addCourse']);
 
 //(require __DIR__ . '/../src/App/Controllers/LecturerController.php')($app, $jwtMiddleware);
 
@@ -57,7 +57,7 @@ $app->post('/api/courses', [$courseController, 'addCourse']);
 // These routes do NOT have JWT middleware applied directly.
 
 // POST /api/register - Handles user and student profile creation
-$app->get('/api/lecturers', [$lecturerController, 'getLecturers']);
+//$app->get('/api/lecturers', [$lecturerController, 'getLecturers']);
 
 $app->post('/api/register', function (Request $request, Response $response) use ($secretKey) {
     try {
