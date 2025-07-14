@@ -39,7 +39,7 @@ export default {
     async fetchStudent() {
       const response = await fetch(`http://localhost:8000/students/${this.enrollment_id}`);
       const data = await response.json();
-      this.student = data;  // Populate the form with the existing student data
+      this.student = data; 
     },
     async updateStudent() {
       const response = await fetch(`http://localhost:8000/students/${this.enrollment_id}`, {

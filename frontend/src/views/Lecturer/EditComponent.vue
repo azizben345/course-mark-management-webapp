@@ -71,9 +71,18 @@ export default {
   },
   methods: {
     async fetchComponent() {
-      const component_id = this.$route.params.component_id;  // Get component_id from URL params
-      const lecturerId = localStorage.getItem('username'); // Get lecturer_id from localStorage
-      const jwt = localStorage.getItem('jwt');  
+      const component_id = this.$route.params.component_id; 
+      const userInfo = JSON.parse(localStorage.getItem('user_info')).id;
+      const jwt = localStorage.getItem('jwt_token');  
+      const lecturerIdResponse = await fetch(`http://localhost:8000/get-lecturer-id/${userInfo}`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${jwt}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      const lecturerData = await lecturerIdResponse.json();
+      const lecturerId = lecturerData.lecturer_id;  
 
       const response = await fetch(`http://localhost:8000/lecturer/${lecturerId}/get-assessment-component/${component_id}`, {
         method: 'GET',
@@ -90,9 +99,18 @@ export default {
     },
 
     async updateComponent() {
-      const lecturerId = localStorage.getItem('username');  // Get lecturer_id from localStorage
       const component_id = this.$route.params.component_id;  // Get component_id from URL params
-      const jwt = localStorage.getItem('jwt');  
+      const userInfo = JSON.parse(localStorage.getItem('user_info')).id;
+      const jwt = localStorage.getItem('jwt_token');  
+      const lecturerIdResponse = await fetch(`http://localhost:8000/get-lecturer-id/${userInfo}`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${jwt}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      const lecturerData = await lecturerIdResponse.json();
+      const lecturerId = lecturerData.lecturer_id;  
 
       const response = await fetch(`http://localhost:8000/lecturer/${lecturerId}/assessment-components/${component_id}/update`, {
         method: 'PUT',

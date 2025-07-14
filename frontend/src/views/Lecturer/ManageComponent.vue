@@ -51,7 +51,6 @@
       </tbody>
     </table>
 
-    <!-- Create Enrollment form -->
     <div>
       <h3>Create New Enrollment</h3>
       <form @submit.prevent="createEnrollment">
@@ -97,8 +96,17 @@ export default {
   methods: {
     async fetchComponentData() {
       const componentId = this.$route.params.component_id;
-      const lecturerId = localStorage.getItem('username');
-      const jwt = localStorage.getItem('jwt');
+      const userInfo = JSON.parse(localStorage.getItem('user_info')).id;
+      const jwt = localStorage.getItem('jwt_token');  
+      const lecturerIdResponse = await fetch(`http://localhost:8000/get-lecturer-id/${userInfo}`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${jwt}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      const lecturerData = await lecturerIdResponse.json();
+      const lecturerId = lecturerData.lecturer_id;
 
       const response = await fetch(`http://localhost:8000/lecturer/${lecturerId}/assessment-components/${componentId}`, {
         method: 'GET',
@@ -117,10 +125,20 @@ export default {
 
     async saveMark(student) {
         const componentId = this.$route.params.component_id;
-        const jwt = localStorage.getItem('jwt');
+        const userInfo = JSON.parse(localStorage.getItem('user_info')).id;
+        const jwt = localStorage.getItem('jwt_token');  
+        const lecturerIdResponse = await fetch(`http://localhost:8000/get-lecturer-id/${userInfo}`, {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${jwt}`,
+            'Content-Type': 'application/json'
+          }
+        });
+        const lecturerData = await lecturerIdResponse.json();
+        const lecturerId = lecturerData.lecturer_id;
 
         // Check if the mark already exists for the student in the assessment_marks table
-        const responseCheck = await fetch(`http://localhost:8000/lecturer/${localStorage.getItem('username')}/assessment-marks/${componentId}/check-mark/${student.enrollment_id}`, {
+        const responseCheck = await fetch(`http://localhost:8000/lecturer/${lecturerId}/assessment-marks/${componentId}/check-mark/${student.enrollment_id}`, {
             method: 'GET',
             headers: {
             'Authorization': `Bearer ${jwt}`,
@@ -130,9 +148,9 @@ export default {
 
         const checkData = await responseCheck.json();
         
-        // If the mark doesn't exist, create a new entry
+        // if the mark doesn't exist, create a new entry
         if (!checkData.exists) {
-            const responseCreate = await fetch(`http://localhost:8000/lecturer/${localStorage.getItem('username')}/assessment-marks/${componentId}/create-mark/${student.enrollment_id}`, {
+            const responseCreate = await fetch(`http://localhost:8000/lecturer/${lecturerId}/assessment-marks/${componentId}/create-mark/${student.enrollment_id}`, {
             method: 'POST',
             headers: {
                 'Authorization': `Bearer ${jwt}`,
@@ -151,7 +169,7 @@ export default {
             }
         } else {
             // If the mark exists, update the existing entry
-            const responseUpdate = await fetch(`http://localhost:8000/lecturer/${localStorage.getItem('username')}/assessment-marks/${componentId}/update-mark/${student.enrollment_id}`, {
+            const responseUpdate = await fetch(`http://localhost:8000/lecturer/${lecturerId}/assessment-marks/${componentId}/update-mark/${student.enrollment_id}`, {
                 method: 'PUT',
                 headers: {
                     'Authorization': `Bearer ${jwt}`,
@@ -175,11 +193,20 @@ export default {
     },
 
     async createEnrollment() {
-        const componentId = this.$route.params.component_id;
-        const lecturerId = localStorage.getItem('username');  // Get lecturer_id from localStorage
-        const jwt = localStorage.getItem('jwt');
+      const componentId = this.$route.params.component_id;
+      const userInfo = JSON.parse(localStorage.getItem('user_info')).id;
+      const jwt = localStorage.getItem('jwt_token');  
+      const lecturerIdResponse = await fetch(`http://localhost:8000/get-lecturer-id/${userInfo}`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${jwt}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      const lecturerData = await lecturerIdResponse.json();
+      const lecturerId = lecturerData.lecturer_id;
 
-        const response = await fetch(`http://localhost:8000/lecturer/${lecturerId}/assessment-components/${componentId}/enroll`, {
+      const response = await fetch(`http://localhost:8000/lecturer/${lecturerId}/assessment-components/${componentId}/enroll`, {
             method: 'POST',
             headers: {
                 'Authorization': `Bearer ${jwt}`,
@@ -188,8 +215,8 @@ export default {
             body: JSON.stringify({
                 matric_no: this.newEnrollment.matric_no,
                 full_name: this.newEnrollment.full_name,
-                course_code: this.component.course_code,  // Send course_code
-                lecturer_id: lecturerId                  // Send lecturer_id
+                course_code: this.component.course_code,
+                lecturer_id: lecturerId
             }),
         });
 
