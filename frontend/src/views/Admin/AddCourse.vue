@@ -18,8 +18,6 @@
 </template>
 
 <script>
-import axios from 'axios';
-
 export default {
   data() {
     return {
@@ -32,10 +30,14 @@ export default {
     };
   },
   created() {
-    // Fetch lecturers on page load
-    axios.get('http://localhost:8000/api/lecturers')
+    // Fetch lecturers on page load using fetch API
+    fetch('http://localhost:8000/api/lecturers')
       .then(res => {
-        this.lecturers = res.data;
+        if (!res.ok) throw new Error('Network response was not ok');
+        return res.json();
+      })
+      .then(data => {
+        this.lecturers = data;
       })
       .catch(err => {
         alert('Failed to load lecturers: ' + err.message);
@@ -43,13 +45,20 @@ export default {
   },
   methods: {
     submitCourse() {
-      axios.post('http://localhost:8000/api/courses', this.course)
-        .then(() => {
+      fetch('http://localhost:8000/api/courses', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(this.course)
+      })
+        .then(res => {
+          if (!res.ok) return res.json().then(err => { throw err; });
           alert('✅ Course added!');
           this.course = { course_code: '', course_name: '', lecturer_id: '' };
         })
         .catch(err => {
-          alert('❌ Error: ' + (err.response?.data?.error || err.message));
+          alert('❌ Error: ' + (err.error || err.message));
         });
     }
   }
