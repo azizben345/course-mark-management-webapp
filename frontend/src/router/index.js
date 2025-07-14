@@ -5,6 +5,7 @@ import { createRouter, createWebHashHistory } from 'vue-router';
 import MyDashboard from '../views/MyDashboard.vue';
 import MyRegister from '../views/MyRegister.vue';
 import MyLogin from '../views/MyLogin.vue';
+import MyProfile from '../views/MyProfile.vue';
 
 // Lecturer Views
 import ManageStudents from '../views/Lecturer/ManageStudents.vue';
@@ -33,6 +34,12 @@ const routes = [
   { path: '/', name: 'Login', component: MyLogin }, // Named the login route
   { path: '/register', name: 'Register', component: MyRegister }, // Named the register route
 
+  // View Profile
+  {
+      path: '/profile',
+      name: 'profile',
+      component: MyProfile  // Map the Profile route to your Profile component
+    },
   // Dashboards - Protected route
   {
     path: '/dashboard',
