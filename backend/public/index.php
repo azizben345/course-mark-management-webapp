@@ -489,7 +489,7 @@ $app->group('/api', function (RouteCollectorProxy $group) use ($secretKey){
 
 })->add($jwtMiddleware); // Apply the JWT middleware to this entire group
 
-//(require __DIR__ . '/../src/App/Controllers/LecturerController.php')($app, $jwtMiddleware); // link to controller for lecturer routes
+(require __DIR__ . '/../src/App/Controllers/LecturerController.php')($app, $jwtMiddleware); // link to controller for lecturer routes
 
 // --- Global CORS Middleware ---
 // This middleware must be added AFTER all route definitions and before $app->run().
