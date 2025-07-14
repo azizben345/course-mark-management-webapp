@@ -8,6 +8,20 @@
 
       <button @click="exportCourseToCSV(course)" style="margin-bottom: 8px;">Export to CSV</button>
 
+      <!-- Enroll New Student Form -->
+      <form @submit.prevent="enrollStudent(course)" style="margin-bottom: 16px; border: 1px solid #ddd; padding: 12px; border-radius: 6px;">
+        <h4>Enroll New Student</h4>
+        <label>
+          Matric No:
+          <input v-model="enrollForms[course.course_code].matric_no" required />
+        </label>
+        <label style="margin-left: 8px;">
+          Academic Year:
+          <input v-model="enrollForms[course.course_code].academic_year" required />
+        </label>
+        <button type="submit" style="margin-left: 12px;">Enroll</button>
+      </form>
+
       <table>
         <thead>
           <tr>
@@ -70,7 +84,8 @@ export default {
   name: 'ManageStudents',
   data() {
     return {
-      courses: []  // array to store courses with students and assessments
+      courses: [],  // array to store courses with students and assessments
+      enrollForms: {} // keyed by course_code
     };
   },
   created() {
@@ -100,22 +115,32 @@ export default {
       const data = await response.json();
 
       this.courses = data.courses;  
+
+      // Initialize enrollForms for each course
+      this.courses.forEach(course => {
+        if (!this.enrollForms[course.course_code]) {
+          this.enrollForms[course.course_code] = {
+            matric_no: '',
+            full_name: '',
+            academic_year: '',
+            assessment_marks: {},
+            final_exam_mark: ''
+          };
+        }
+      });
     },
 
     getAssessmentMark(student, component_name) {
-      
       const mark = student.marks.find(mark => mark.component_name === component_name);
       return mark ? mark.mark_obtained : 'N/A';  
     },
 
     editStudent(student) {
-      
       student.isEditingFinalExam = true;
       student.newFinalExamMark = student.final_exam_mark;  // pre-fill the input with current final exam mark
     },
 
     async saveStudent(student) {
-      
       const finalExamMark = student.newFinalExamMark;
       const jwt = localStorage.getItem('jwt_token');  
 
@@ -133,7 +158,6 @@ export default {
       const data = await response.json();
       
       if (data.message) {
-        
         await this.fetchStudents();
         student.isEditingFinalExam = false;
       } else {
@@ -143,21 +167,21 @@ export default {
 
     async deleteStudent(enrollment_id) {
       if (!confirm('Are you sure you want to unenroll this student?')) {
-      return;
+        return;
       }
       const jwt = localStorage.getItem('jwt_token');  
       
       const response = await fetch(`http://localhost:8000/students/${enrollment_id}`, {
-      method: 'DELETE',
-      headers: {
-        'Authorization': `Bearer ${jwt}`,
-      },
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${jwt}`,
+        },
       });
       const data = await response.json();
 
       if (data.message) {
-      alert('Student deleted successfully');
-      this.fetchStudents();  // refresh the student list
+        alert('Student deleted successfully');
+        this.fetchStudents();  // refresh the student list
       }
     },
 
@@ -199,6 +223,66 @@ export default {
       link.click();
     },
 
+    async enrollStudent(course) {
+      const jwt = localStorage.getItem('jwt_token');
+      const userInfo = JSON.parse(localStorage.getItem('user_info')).id;
+      // Get lecturer_id
+      const lecturerIdResponse = await fetch(`http://localhost:8000/get-lecturer-id/${userInfo}`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${jwt}`,
+        'Content-Type': 'application/json'
+      }
+      });
+      const lecturerData = await lecturerIdResponse.json();
+      const lecturer_id = lecturerData.lecturer_id;
+
+      // Ensure enrollForms[course.course_code] is initialized
+      if (!this.enrollForms[course.course_code]) {
+      this.enrollForms[course.course_code] = {
+        matric_no: '',
+        academic_year: ''
+      };
+      }
+      const form = this.enrollForms[course.course_code];
+      // Prepare assessment_marks array with 0 for all
+      const assessment_marks = course.components.map(component => ({
+      component_id: component.component_id,
+      mark_obtained: 0
+      }));
+
+      // Compose payload
+      const payload = {
+      matric_no: form.matric_no,
+      course_code: course.course_code,
+      lecturer_id,
+      academic_year: form.academic_year,
+      assessment_marks,
+      final_exam_mark: 0
+      };
+
+      const response = await fetch('http://localhost:8000/enrollments', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${jwt}`,
+      },
+      body: JSON.stringify(payload)
+      });
+      const data = await response.json();
+      if (data.message) {
+      alert('Student enrolled successfully.');
+      // Reset form
+      this.enrollForms[course.course_code] = {
+        matric_no: '',
+        full_name: '',
+        academic_year: ''
+      };
+      this.fetchStudents();
+      } else {
+      alert('Failed to enroll student.');
+      }
+    }
   }
 };
 </script>

@@ -7,7 +7,7 @@
       <h3>{{ course.course_name }} ({{ course.course_code }})</h3>
 
       <!-- Table for each course -->
-      <table v-if="course.assessments && course.assessments.length">
+      <table v-if="course.components && course.components.length">
         <thead>
           <tr>
             <th>No.</th>
@@ -19,7 +19,7 @@
           </tr>
         </thead>
         <tbody>
-          <tr v-for="(component, index) in course.assessments" :key="component.component_id">
+          <tr v-for="(component, index) in course.components" :key="component.component_id">
             <td>{{ index + 1 }}</td>
             <td>{{ component.component_id }}</td>
             <td>{{ component.component_name }}</td>
@@ -94,17 +94,25 @@ export default {
       });
       const data = await response.json();
 
-      // Map and group assessments by course_code, handle null/empty
-      const groupedCourses = Object.keys(data).map(courseCode => {
-        const assessments = Array.isArray(data[courseCode]) && data[courseCode] ? data[courseCode] : [];
-        return {
-          course_code: courseCode,
-          course_name: assessments.length > 0 && assessments[0].course_name ? assessments[0].course_name : 'Unknown Course',
-          assessments: assessments
-        };
-      });
-
-      this.courses = groupedCourses;  // Assign grouped courses to the component
+      // Handle array format: [{course_code, course_name, components: [...]}, ...]
+      if (Array.isArray(data)) {
+        this.courses = data.map(course => ({
+          course_code: course.course_code,
+          course_name: course.course_name,
+          components: Array.isArray(course.components) ? course.components : []
+        }));
+      } else {
+        // fallback for old object format
+        const groupedCourses = Object.keys(data).map(courseCode => {
+          const assessments = Array.isArray(data[courseCode]) && data[courseCode] ? data[courseCode] : [];
+          return {
+            course_code: courseCode,
+            course_name: assessments.length > 0 && assessments[0].course_name ? assessments[0].course_name : 'Unknown Course',
+            components: assessments
+          };
+        });
+        this.courses = groupedCourses;
+      }
     },
 
     async createAssessmentComponent(course_code) {
@@ -154,16 +162,16 @@ export default {
       let component = null;  
 
       for (const course of this.courses) {
-      component = course.assessments.find(c => c.component_id === component_id);
-      if (component) break;
+        component = (course.components || []).find(c => c.component_id === component_id);
+        if (component) break;
       }
       if (!component) {
-      alert('Component not found');
-      return;
+        alert('Component not found');
+        return;
       }
       if (component.student_count > 0) {
-      alert('Cannot delete: There are students with marks for this component.');
-      return;
+        alert('Cannot delete: There are students with marks for this component.');
+        return;
       }
 
       const userInfo = JSON.parse(localStorage.getItem('user_info')).id;

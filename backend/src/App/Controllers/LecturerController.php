@@ -164,7 +164,7 @@ return function ($app, $jwtMiddleware) {
 
         $data = json_decode($request->getBody()->getContents(), true);
         
-        $student_matric_no = $data['student_matric_no'];
+        $student_matric_no = $data['matric_no'];
         $course_code = $data['course_code'];
         $lecturer_id = $data['lecturer_id'];
         $academic_year = $data['academic_year'];
@@ -290,28 +290,47 @@ return function ($app, $jwtMiddleware) {
         return $response->withHeader('Content-Type', 'application/json');
     })->add($jwtMiddleware);
 
-    // route to get or fetch all assessment components based on the lecturer's courses
+    // route to get or fetch all assessment components based on the lecturer's courses,
+    // including courses with no components
     $app->get('/lecturer/{lecturer_id}/get-assessment-components', function (Request $request, Response $response, $args) {
         $lecturer_id = $args['lecturer_id'];
         $db = new db();
         $pdo = $db->getPDO();
-        $stmt = $pdo->prepare("
-            SELECT ac.component_id, ac.component_name, ac.max_mark, c.course_code, c.course_name,
+
+        // Fetch all courses for the lecturer
+        $stmt_courses = $pdo->prepare("
+            SELECT course_code, course_name
+            FROM courses
+            WHERE lecturer_id = :lecturer_id
+        ");
+        $stmt_courses->execute(['lecturer_id' => $lecturer_id]);
+        $courses = $stmt_courses->fetchAll(\PDO::FETCH_ASSOC);
+
+        // Fetch all components for the lecturer's courses
+        $stmt_components = $pdo->prepare("
+            SELECT ac.component_id, ac.component_name, ac.max_mark, ac.course_code,
                 (SELECT COUNT(*) FROM assessment_marks am WHERE am.component_id = ac.component_id) AS student_count
             FROM assessment_components ac
-            JOIN courses c ON ac.course_code = c.course_code
             WHERE ac.lecturer_id = :lecturer_id
         ");
-        $stmt->execute(['lecturer_id' => $lecturer_id]);
-        $components = $stmt->fetchAll();
+        $stmt_components->execute(['lecturer_id' => $lecturer_id]);
+        $components = $stmt_components->fetchAll(\PDO::FETCH_ASSOC);
 
-        // Group by course_code
+        // Group components by course_code
         $groupedComponents = [];
+        foreach ($courses as $course) {
+            $groupedComponents[$course['course_code']] = [
+                'course_code' => $course['course_code'],
+                'course_name' => $course['course_name'],
+                'components' => []
+            ];
+        }
         foreach ($components as $component) {
-            $groupedComponents[$component['course_code']][] = $component;
+            $groupedComponents[$component['course_code']]['components'][] = $component;
         }
 
-        $response->getBody()->write(json_encode($groupedComponents));
+        // Return as array of courses with their components (even if empty)
+        $response->getBody()->write(json_encode(array_values($groupedComponents)));
         return $response->withHeader('Content-Type', 'application/json');
     });//->add($jwtMiddleware);
 
