@@ -34,40 +34,40 @@ export default {
   },
   methods: {
     submitResetPassword() {
-      if (this.newPassword !== this.confirmPassword) {
-        this.errorMessage = "New password and confirm password don't match.";
-        return;
-      }
+  if (this.newPassword !== this.confirmPassword) {
+    this.errorMessage = "New password and confirm password don't match.";
+    return;
+  }
 
-      // Get the user info from localStorage (user_id should be part of user_info)
-      const userInfo = JSON.parse(localStorage.getItem('user_info'));
-      const userId = userInfo.id;
+  // Get the user info from localStorage (user_id should be part of user_info)
+  const userInfo = JSON.parse(localStorage.getItem('user_info'));
+  const userId = userInfo.id;
 
-      // Make API call to reset the password
-      fetch('http://localhost:8000/api/reset-password', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          userId: userId,  // Make sure this is `userId`
-          oldPassword: this.currentPassword,  // Match with backend key 'oldPassword'
-          newPassword: this.newPassword       // Match with backend key 'newPassword'
-        })
-      })
-      .then(response => response.json())
-      .then(data => {
-        if (data.success) {
-          this.successMessage = "Password successfully reset!";
-        } else {
-          this.errorMessage = data.message || "An error occurred.";
-        }
-      })
-      .catch(error => {
-        this.errorMessage = 'Error resetting password. Please try again later.';
-        console.error('Error:', error);
-      });
+  // Make API call to reset the password
+  fetch('http://localhost:8000/api/reset-password', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      user_id: userId,  // Make sure this is `user_id`
+      current_password: this.currentPassword,  // Use the correct key 'current_password' here
+      new_password: this.newPassword           // Use 'new_password'
+    })
+  })
+  .then(response => response.json())
+  .then(data => {
+    if (data.success) {
+      this.successMessage = "Password successfully reset!";
+    } else {
+      this.errorMessage = data.message || "An error occurred.";
     }
+  })
+  .catch(error => {
+    this.errorMessage = 'Error resetting password. Please try again later.';
+    console.error('Error:', error);
+  });
+}
   }
 }
 </script>
