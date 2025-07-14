@@ -10,11 +10,22 @@
       </div>
       <div class="content">
         <img :src="img" class="avatar-large" />
-        <div class="name">{{ user.name }}</div>
-        <div class="email">{{ user.email }}</div>
+        <div class="name">{{ localUser.name }}</div>
+        <div class="email">{{ localUser.email }}</div>
         <div class="role">({{ formattedRole }})</div>
 
         <div class="actions">
+          <!-- View Profile Button -->
+          <button @click="viewProfile" class="view-profile">
+            👤 View Profile
+          </button>
+          
+          <!-- Reset Password Button -->
+          <button @click="resetPassword" class="reset-password">
+            🔑 Reset Password
+          </button>
+
+          <!-- Logout Button -->
           <button @click="logout" class="logout">
             🔓 Logout
           </button>
@@ -29,34 +40,61 @@
 
 <script>
 export default {
-  props: ['user'],
   data() {
     return {
       isOpen: false,
-      img: "https://i.pravatar.cc/150?img=12"
+      img: "https://i.pravatar.cc/150?img=12",
+      localUser: { name: '', email: '', role: '' }  // Ensure all fields are initialized
+    };
+  },
+  mounted() {
+    // Get user info from localStorage when the component mounts
+    const userInfo = JSON.parse(localStorage.getItem('user_info'));
+    if (userInfo) {
+      this.localUser = userInfo;  // Set the user data to the local data property
     }
   },
   computed: {
     formattedRole() {
-      return this.user.role === 'personbmi'
-        ? 'Person BMI'
-        : this.user.role.charAt(0).toUpperCase() + this.user.role.slice(1);
+      // Ensure `role` exists before accessing it
+      if (!this.localUser.role) {
+        return 'Unknown Role';  // Fallback value in case the role is undefined
+      }
+
+      // Only map known roles, otherwise use the role as it is
+      const roleMap = {
+        admin: 'Admin',
+        lecturer: 'Lecturer',
+        student: 'Student',
+        advisor: 'Advisor'
+      };
+
+      // Return the formatted role based on the mapping or just the role if it's unknown
+      return roleMap[this.localUser.role] || this.localUser.role.charAt(0).toUpperCase() + this.localUser.role.slice(1);
     }
   },
   methods: {
     toggleSidebar() {
       this.isOpen = !this.isOpen;
     },
+    // View Profile: Redirect to the profile page
     viewProfile() {
-      alert(`Name: ${this.user.name}\nEmail: ${this.user.email}`);
+      this.$router.push('/profile');  // Navigate to the profile page
     },
+
+    // Reset Password Method: Trigger password reset functionality
+    resetPassword() {
+      // Directly navigate to the Reset Password page
+      this.$router.push('/reset-password');
+    },
+
     logout() {
       this.isOpen = false;
       // Remove both jwt_token and user_info from localStorage
       localStorage.removeItem('jwt_token');
       localStorage.removeItem('user_info');
       // Redirect to the login page (root path)
-      this.$router.push('/');
+      this.$router.push('/');  // Navigate to the login page
     }
   }
 }
@@ -146,6 +184,10 @@ button {
   color: #2d3748;
   text-align: left;
   cursor: pointer;
+}
+
+.view-profile {
+  color: #4a90e2;
 }
 
 .logout {

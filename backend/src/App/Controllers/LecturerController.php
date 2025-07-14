@@ -20,8 +20,6 @@ return function ($app, $jwtMiddleware) {
         $response->getBody()->write(json_encode($lecturers));
         return $response->withHeader('Content-Type', 'application/json');
     });
-
-
     // fetch lecturer_id by comparing lecturers.user_id to user_id from API URL
     $app->get('/get-lecturer-id/{user_id}', function (Request $request, Response $response, $args) {
         $user_id = $args['user_id'];
@@ -42,7 +40,7 @@ return function ($app, $jwtMiddleware) {
         return $response->withHeader('Content-Type', 'application/json');
     })->add($jwtMiddleware);
 
-    // manage students route
+     // manage students route
     $app->get('/manage-students/{lecturer_id}', function (Request $request, Response $response, $args) {
         $lecturer_id = $args['lecturer_id'];
 
@@ -68,7 +66,7 @@ return function ($app, $jwtMiddleware) {
             ];
         }
 
-        // Get all assessment components for these courses
+         // Get all assessment components for these courses
         if (!empty($courses)) {
             $courseCodes = array_keys($courses);
             $inQuery = implode(',', array_fill(0, count($courseCodes), '?'));
@@ -94,7 +92,7 @@ return function ($app, $jwtMiddleware) {
                     e.final_exam_mark, 
                     e.final_total,
                     e.total_ca
-                FROM 
+                 FROM 
                     enrollments e
                 JOIN 
                     students s ON e.student_matric_no = s.matric_no
@@ -106,7 +104,7 @@ return function ($app, $jwtMiddleware) {
 
             foreach ($students as $student) {
                 $course_code = $student['course_code'];
-                if (isset($courses[$course_code])) {
+                 if (isset($courses[$course_code])) {
                     $student['marks'] = [];
                     $total_ca = 0;
 
@@ -116,7 +114,7 @@ return function ($app, $jwtMiddleware) {
                             FROM assessment_marks
                             WHERE enrollment_id = :enrollment_id AND component_id = :component_id
                         ");
-                        $stmt_marks->execute([
+                                   $stmt_marks->execute([
                             'enrollment_id' => $student['enrollment_id'],
                             'component_id' => $assessment['component_id']
                         ]);
@@ -141,7 +139,7 @@ return function ($app, $jwtMiddleware) {
                     $stmt_update->execute([
                         'total_ca' => $total_ca,
                         'final_total' => $final_total,
-                        'enrollment_id' => $student['enrollment_id']
+                         'enrollment_id' => $student['enrollment_id']
                     ]);
 
                     $courses[$course_code]['students'][] = $student;
@@ -149,7 +147,7 @@ return function ($app, $jwtMiddleware) {
             }
         }
 
-        // Return combined response with courses and students
+         // Return combined response with courses and students
         $response->getBody()->write(json_encode([
             'courses' => array_values($courses)
         ]));
@@ -259,9 +257,9 @@ return function ($app, $jwtMiddleware) {
         $enrollment_id = $args['enrollment_id'];
 
         $db = new db();      
-        $pdo = $db->getPDO(); 
+        $pdo = $db->getPDO();
 
-        // Delete the student from the enrollments table
+         // Delete the student from the enrollments table
         $stmt = $pdo->prepare("DELETE FROM enrollments WHERE enrollment_id = :enrollment_id");
         $stmt->execute(['enrollment_id' => $enrollment_id]);
 
@@ -354,7 +352,6 @@ return function ($app, $jwtMiddleware) {
             'component_id' => $component_id
         ]);
         $component = $stmt->fetch();
-
         if ($component) {
             $response->getBody()->write(json_encode(['component' => $component]));
         } else {
@@ -407,7 +404,7 @@ return function ($app, $jwtMiddleware) {
         return $response->withHeader('Content-Type', 'application/json');
     });
 
-    // route to create a new assessment component
+     // route to create a new assessment component
     $app->post('/lecturer/{lecturer_id}/create-assessment-components', function (Request $request, Response $response, $args) {
         $lecturer_id = $args['lecturer_id'];
         $data = json_decode($request->getBody()->getContents(), true);
@@ -418,7 +415,7 @@ return function ($app, $jwtMiddleware) {
 
         $db = new db();      
         $pdo = $db->getPDO(); 
-        $stmt = $pdo->prepare("
+         $stmt = $pdo->prepare("
             INSERT INTO assessment_components (course_code, lecturer_id, component_name, max_mark)
             VALUES (:course_code, :lecturer_id, :component_name, :max_mark)
         ");
@@ -443,7 +440,7 @@ return function ($app, $jwtMiddleware) {
 
         $db = new db();      
         $pdo = $db->getPDO(); 
-        $stmt = $pdo->prepare("UPDATE assessment_marks SET mark_obtained = ? WHERE enrollment_id = ? AND component_id = ?");
+         $stmt = $pdo->prepare("UPDATE assessment_marks SET mark_obtained = ? WHERE enrollment_id = ? AND component_id = ?");
         $stmt->execute([$mark_obtained, $enrollment_id, $component_id]);
 
         $response->getBody()->write(json_encode(['message' => 'Assessment mark updated successfully']));
@@ -453,7 +450,7 @@ return function ($app, $jwtMiddleware) {
     $app->get('/lecturer/{lecturer_id}/assessment-marks/{component_id}/check-mark/{enrollment_id}', function (Request $request, Response $response, $args) {
         $component_id = $args['component_id'];
         $enrollment_id = $args['enrollment_id'];
-        
+
         $db = new db();      
         $pdo = $db->getPDO(); 
         $stmt = $pdo->prepare("SELECT 1 FROM assessment_marks WHERE enrollment_id = :enrollment_id AND component_id = :component_id LIMIT 1");
@@ -464,6 +461,7 @@ return function ($app, $jwtMiddleware) {
         return $response->withHeader('Content-Type', 'application/json');
     });
     // Create new assessment mark if no record exists
+
     $app->post('/lecturer/{lecturer_id}/assessment-marks/{component_id}/create-mark/{enrollment_id}', function (Request $request, Response $response, $args) {
         $component_id = $args['component_id'];
         $enrollment_id = $args['enrollment_id'];
@@ -516,7 +514,7 @@ return function ($app, $jwtMiddleware) {
             'component_id' => $component_id
         ]);
 
-        $response->getBody()->write(json_encode(['message' => 'Assessment component updated successfully']));
+         $response->getBody()->write(json_encode(['message' => 'Assessment component updated successfully']));
         return $response->withHeader('Content-Type', 'application/json');
     })->add($jwtMiddleware);
 
@@ -537,7 +535,7 @@ return function ($app, $jwtMiddleware) {
 
         if (!$componentExists) {
             $response->getBody()->write(json_encode(['error' => 'Component does not belong to this lecturer']));
-            return $response->withStatus(400)->withHeader('Content-Type', 'application/json');
+             return $response->withStatus(400)->withHeader('Content-Type', 'application/json');
         }
 
         // Delete all marks for the specified component
@@ -549,8 +547,7 @@ return function ($app, $jwtMiddleware) {
         $response->getBody()->write(json_encode(['message' => 'All marks for this assessment component have been cleared']));
         return $response->withHeader('Content-Type', 'application/json');
     })->add($jwtMiddleware);
-
-    // route to delete an assessment component
+     // route to delete an assessment component
     $app->delete('/lecturer/{lecturer_id}/delete-assessment-components/{component_id}', function (Request $request, Response $response, $args) {
         $lecturer_id = $args['lecturer_id'];
         $component_id = $args['component_id'];
@@ -636,4 +633,4 @@ return function ($app, $jwtMiddleware) {
             return $response->withStatus(500)->withHeader('Content-Type', 'application/json');
         }
     })->add($jwtMiddleware);
-};
+};    

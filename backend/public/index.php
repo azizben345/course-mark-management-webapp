@@ -21,10 +21,12 @@ use App\db;
 use App\Middleware\JwtMiddleware;
 use App\Controllers\AuthController;
 use App\Controllers\StudentController;
+use App\Controllers\PasswordResetController;
 //use App\Controllers\LecturerController;
 //use App\Controllers\AdvisorController;
 //use App\Controllers\AdminController;
 //use App\Controllers\CourseController;
+use App\Services\PasswordResetService;
 use App\Services\StudentService;
 use App\Services\LecturerService;
 use App\Services\AdvisorService;
@@ -76,6 +78,19 @@ $pdo = $database->getPDO();
 
 // POST /api/register - Handles user and student profile creation
 //$app->get('/api/lecturers', [$lecturerController, 'getLecturers']);
+
+// Define the route for resetting the password
+$app->post('/api/reset-password', function (Request $request, Response $response, $args) {
+    // Direct instantiation of db
+    $database = new db(); // Instantiate the database object directly
+    $pdo = $database->getPDO(); // Get PDO instance
+
+    // Instantiate the PasswordResetController with the database connection
+    $passwordResetController = new \App\Controllers\PasswordResetController($pdo);
+
+    // Call the resetPassword method of PasswordResetController
+    return $passwordResetController->resetPassword($request, $response, $args);
+});
 
 $app->post('/api/register', function (Request $request, Response $response) use ($secretKey) {
     try {
@@ -474,7 +489,7 @@ $app->group('/api', function (RouteCollectorProxy $group) use ($secretKey){
 
 })->add($jwtMiddleware); // Apply the JWT middleware to this entire group
 
-(require __DIR__ . '/../src/App/Controllers/LecturerController.php')($app, $jwtMiddleware); // link to controller for lecturer routes
+//(require __DIR__ . '/../src/App/Controllers/LecturerController.php')($app, $jwtMiddleware); // link to controller for lecturer routes
 
 // --- Global CORS Middleware ---
 // This middleware must be added AFTER all route definitions and before $app->run().

@@ -5,6 +5,7 @@ import { createRouter, createWebHashHistory } from 'vue-router';
 import MyDashboard from '../views/MyDashboard.vue';
 import MyRegister from '../views/MyRegister.vue';
 import MyLogin from '../views/MyLogin.vue';
+import MyProfile from '../views/MyProfile.vue';
 
 // Lecturer Views
 import ManageStudents from '../views/Lecturer/ManageStudents.vue';
@@ -28,12 +29,19 @@ import MeetingRecord from '../views/Advisor/MeetingRecord.vue';
 // Admin
 import ManageUsers from '../views/Admin/ManageUsers.vue';
 import AddCourse from '../views/Admin/AddCourse.vue';
+import ResetPassword from '../views/Admin/ResetPassword.vue';
 
 const routes = [
   // Authentication Routes
   { path: '/', name: 'Login', component: MyLogin }, // Named the login route
   { path: '/register', name: 'Register', component: MyRegister }, // Named the register route
 
+  // View Profile
+  {
+      path: '/profile',
+      name: 'profile',
+      component: MyProfile  // Map the Profile route to your Profile component
+    },
   // Dashboards - Protected route
   {
     path: '/dashboard',
@@ -69,8 +77,8 @@ const routes = [
 
   // Admin Routes - Protected routes
   { path: '/admin/manage-users', component: ManageUsers, meta: { requiresAuth: true, role: 'admin' } },
-  { path: '/admin/create-course', component: AddCourse, meta: { requiresAuth: true, role: 'admin' } }
-  
+  { path: '/admin/create-course', component: AddCourse, meta: { requiresAuth: true, role: 'admin' } },
+  { path: '/reset-password', name: 'ResetPassword', component: ResetPassword}
   // 404 Catch-all (uncomment when all routes are defined and tested)
   // { path: '/:pathMatch(.*)*', name: 'NotFound', component: NotFound }
 ];
